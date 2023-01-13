@@ -1,0 +1,25 @@
+USB collecting data during entire drive....
+During drive, every disengagment time is recorded.
+If the driver feels that was a disengagment to log, they can press a button within 30 seconds of the disengagment to review later.
+These two times t0 (start of disengagment) and tf (when button is pressed) are saved. 
+When the drive is complete, the USB drive switches from the racelogic to the mercury PC. 
+When the drive is detected, the program will have a list of t0s and tfs to crop the video in different sections. 
+These videos will then be displayed for review one by one, repeating and allow the safety driver to write a text desciption of each incident. 
+This info is then saved on the mercury PC (uploaded to cloud?) and the thumb drive is cleared/formated. 
+When the car turns off, the usb switch goes back to vbox and the cycle is ready to repeat again. 
+
+Issue to solve... what would trigger the GUI to pop up and run? We could add a button to existing GUI... The front monitors are on last node. 
+
+Sudocode 1/12/23:
+start the video capture with opencv
+Listen to disengagment ros node
+
+https://stackoverflow.com/questions/29317262/opencv-video-saving-in-python <--- for the following code
+OR
+https://www.geeksforgeeks.org/saving-operated-video-from-a-webcam-using-opencv/
+
+if disengagment, loop over and over capturing the frame. each new frame check for the following:
+1. was a button pressed from the driver (may not need just put timer on it)
+2. timer of 10 seconds has passed, set DE to false or 0
+3. another disengagment occurs, set DE to false or 0
+if another disengagment occurs, set DE to True or 1 to start a new recording
