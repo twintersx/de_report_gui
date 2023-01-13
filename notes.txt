@@ -23,3 +23,10 @@ if disengagment, loop over and over capturing the frame. each new frame check fo
 2. timer of 10 seconds has passed, set DE to false or 0
 3. another disengagment occurs, set DE to false or 0
 if another disengagment occurs, set DE to True or 1 to start a new recording
+
+
+
+python3 -m pip install geopandas
+python3 -m pip install shapely
+
+pip install folium
