@@ -2,7 +2,7 @@ import cv2
 from datetime import datetime, timedelta
 import imageio 
 
-cap = cv2.VideoCapture(0)   # change to 1 for input
+cap = cv2.VideoCapture(1)   # change to 1 for input
 
 t0 = datetime.now()
 tf = t0 + timedelta(seconds=10)
@@ -17,7 +17,7 @@ while(datetime.now() < tf):
     frames.append(frame)
 
     # The original input frame is shown in the window 
-    cv2.imshow('Original', frame)
+    cv2.imshow('Racelogic Feed', frame)
 
     # pressing 'a' simulates a new DE during recording 
     if cv2.waitKey(1) & 0xFF == ord('a'):
