@@ -1,0 +1,4 @@
+Switch to pyqt5
+default opens program on current date
+add radiobutton for street or highway
+Create calendar dropdown with date range to select

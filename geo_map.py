@@ -11,7 +11,7 @@ encoded = base64.b64encode(open(img, 'rb').read()).decode()
 gif_html = f'<img src="data:image/gif;base64,{encoded}">'
 
 html = f"""{gif_html}
-        <br>Description: <input type="text" id="myInput"><br>
+        <br>DESCRIPTION OF FACTS CAUSING DISENGAGEMENT: <input type="text" value="{"The AV steered offcourse"}" id="myInput"><br> 
         <button onclick="myFunction()">Save</button>
         """
 
