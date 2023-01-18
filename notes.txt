@@ -30,3 +30,18 @@ python3 -m pip install geopandas
 python3 -m pip install shapely
 
 pip install folium
+
+
+rostopic echo /GPSDiag
+Look for Longitude: and Latitude: 
+
+rostopic echo /driver_input
+will show steering angle, brake or accel pedal being pressed
+
+rostopic echo /accel_state
+shows linear/angular acceleration values. Disengagment occurs here?
+
+What if instead of adding physical button, we add something to the touchscreen monitor? 
+
+
+https://stackoverflow.com/questions/67628175/how-to-copy-a-markers-location-on-folium-map-by-clicking-on-it

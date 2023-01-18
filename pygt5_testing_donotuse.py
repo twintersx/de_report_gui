@@ -6,7 +6,6 @@ from folium import IFrame
 from PyQt5.QtWidgets import QApplication, QWidget, QHBoxLayout, QVBoxLayout
 from PyQt5.QtWebEngineWidgets import QWebEngineView # pip install PyQtWebEngine
 from PyQt5 import QtCore
-import time
 
 """
 Folium in PyQt5
