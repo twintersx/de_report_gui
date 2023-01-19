@@ -45,3 +45,10 @@ What if instead of adding physical button, we add something to the touchscreen m
 
 
 https://stackoverflow.com/questions/67628175/how-to-copy-a-markers-location-on-folium-map-by-clicking-on-it
+
+
+
+How do we relate the html code back to python?
+    Can I embed the GPS coordinates of the "marker" into the html? YES we can do that
+    Do a very simple script embedding a coordinate into a marker
+        use python to 
