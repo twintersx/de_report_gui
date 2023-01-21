@@ -1,18 +1,18 @@
 #https://stackoverflow.com/questions/52098156/launch-javascript-function-from-pyqt-qwebengineview
 
-import sys, base64, os
+import sys, base64, os 
 import folium # pip install folium
 import jinja2
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton
 from PyQt5.QtWebEngineWidgets import QWebEngineView # pip install PyQtWebEngine
-from PyQt5 import QtCore
+from PyQt5.QtCore import * 
 
 # created a folium map inside the class MyApp
 class MyApp(QWidget):
     def __init__(self):
         super().__init__()  # referencing the "parent" or "super" class, QWidget which the child class MyApp needs.
         self.initUI()
-    
+
     def initUI(self):
         self.setWindowTitle('Disengagment Report Map')
         self.window_width, self.window_height = 1600, 1200
@@ -32,27 +32,39 @@ class MyApp(QWidget):
                     PLEASE SELECT A ROAD TYPE: 
                     <input type="radio" id="street" name="road_type" value="Street"> <label for="street">Street</label>
                     <input type="radio" id="highway" name="road_type" value="Highway"> <label for="highway">Highway</label><br>
-                    <button onclick="myFunction()">Save</button>
+                    <button onclick="myFunction()">Save</button><br><br>
+                    Console: <input type="text" value="" id="console" size="50">
                 """
             
         folium.Marker(location=[37.391200, -122.001061], popup=html).add_to(m)
         
         java = folium.MacroElement().add_to(m)
-        java._template = jinja2.Template("""
+        java._template = jinja2.Template("""    
             {% macro script(this, kwargs) %}
             function myFunction() {
                 var copyText = document.getElementById("myInput");
-                copyText.select();
-                document.execCommand('copy')
+                localStorage.setItem('testObj', copyText.value)
+                
+                // Retrieve the object from storage
+                var retrievedObject = localStorage.getItem('testObj');
+
+                document.getElementById("console").value = retrievedObject;
             }
             {% endmacro %}
         """)
 
         m.save('map.html')
-        url = QtCore.QUrl.fromLocalFile(os.path.join(os.getcwd(), 'map.html'))
+        url = QUrl.fromLocalFile(os.path.join(os.getcwd(), 'map.html'))
         webView = QWebEngineView()  # used to view and edit web documents
         webView.load(url)   
         layout.addWidget(webView)
+
+        button = QPushButton("SAVE", self)
+        button.clicked.connect(self.on_click)
+        layout.addWidget(button)
+
+    def on_click(self):
+        pass
 
 app = QApplication(sys.argv)
 app.setStyleSheet('QWidget {font-size: 35px;}')

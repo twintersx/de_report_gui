@@ -52,3 +52,6 @@ How do we relate the html code back to python?
     Can I embed the GPS coordinates of the "marker" into the html? YES we can do that
     Do a very simple script embedding a coordinate into a marker
         use python to 
+
+
+sEEMS like localstorage only runs on the browser side and not on the server side. I think cookies may be the only way to interact that way
