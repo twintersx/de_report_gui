@@ -25,7 +25,7 @@
             <meta name="viewport" content="width=device-width,
                 initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
             <style>
-                #map_e032c3828872d38b5fb2cf4806ee9038 {
+                #map_f009e2fedf397c1af5b632b11732075c {
                     position: relative;
                     width: 100.0%;
                     height: 100.0%;
@@ -39,14 +39,14 @@
 <body>
     
     
-            <div class="folium-map" id="map_e032c3828872d38b5fb2cf4806ee9038" ></div>
+            <div class="folium-map" id="map_f009e2fedf397c1af5b632b11732075c" ></div>
         
 </body>
 <script>
     
     
-            var map_e032c3828872d38b5fb2cf4806ee9038 = L.map(
-                "map_e032c3828872d38b5fb2cf4806ee9038",
+            var map_f009e2fedf397c1af5b632b11732075c = L.map(
+                "map_f009e2fedf397c1af5b632b11732075c",
                 {
                     center: [37.377223, -121.990215],
                     crs: L.CRS.EPSG3857,
@@ -60,28 +60,28 @@
 
         
     
-            var tile_layer_9b901b992f729203f5e83530b1f4884a = L.tileLayer(
+            var tile_layer_f2ce6a26892f094b06e0c9ad854211dc = L.tileLayer(
                 "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
                 {"attribution": "Data by \u0026copy; \u003ca target=\"_blank\" href=\"http://openstreetmap.org\"\u003eOpenStreetMap\u003c/a\u003e, under \u003ca target=\"_blank\" href=\"http://www.openstreetmap.org/copyright\"\u003eODbL\u003c/a\u003e.", "detectRetina": false, "maxNativeZoom": 18, "maxZoom": 18, "minZoom": 0, "noWrap": false, "opacity": 1, "subdomains": "abc", "tms": false}
-            ).addTo(map_e032c3828872d38b5fb2cf4806ee9038);
+            ).addTo(map_f009e2fedf397c1af5b632b11732075c);
         
     
-            var marker_f1eb113860316be41dc8c52e142ec149 = L.marker(
+            var marker_9cda0e7ae2e2b8c1a4280d552b496654 = L.marker(
                 [37.3912, -122.001061],
                 {}
-            ).addTo(map_e032c3828872d38b5fb2cf4806ee9038);
+            ).addTo(map_f009e2fedf397c1af5b632b11732075c);
         
     
-        var popup_253db6e77c428f8cb9c896e3608c89b0 = L.popup({"maxWidth": "100%"});
+        var popup_98269397fea6621dd74a9c2d2b79c871 = L.popup({"maxWidth": "100%"});
 
         
             
-                var html_9759ccac4bcd936c53fc6f7fe23ef7f5 = $(`<div id="html_9759ccac4bcd936c53fc6f7fe23ef7f5" style="width: 100.0%; height: 100.0%;">                 <input type="text" value="" id="userInput" size="50">                 <button onclick="download()">Save</button><br>                 Console: <input type="text" value="" id="console" size="50">                 </div>`)[0];
-                popup_253db6e77c428f8cb9c896e3608c89b0.setContent(html_9759ccac4bcd936c53fc6f7fe23ef7f5);
+                var html_1ea910a8bde086bd4606369c63d94be5 = $(`<div id="html_1ea910a8bde086bd4606369c63d94be5" style="width: 100.0%; height: 100.0%;">                 <input type="text" value="" id="userInput" size="50">                 <button onclick="download()">Save</button><br>                 Console: <input type="text" value="" id="console" size="50">                 </div>`)[0];
+                popup_98269397fea6621dd74a9c2d2b79c871.setContent(html_1ea910a8bde086bd4606369c63d94be5);
             
         
 
-        marker_f1eb113860316be41dc8c52e142ec149.bindPopup(popup_253db6e77c428f8cb9c896e3608c89b0)
+        marker_9cda0e7ae2e2b8c1a4280d552b496654.bindPopup(popup_98269397fea6621dd74a9c2d2b79c871)
         ;
 
         
@@ -90,12 +90,7 @@
 
             function download() {
                 var user_input = document.getElementById("userInput");
-                localStorage.setItem('testObj', user_input.value)
-                
-                // Retrieve the object from storage
-                var retrievedObject = localStorage.getItem('testObj');
-
-                document.getElementById("console").value = retrievedObject;
+                document.cookie = user_input.value;
             }
 
             

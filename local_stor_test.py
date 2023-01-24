@@ -1,20 +1,33 @@
-import sys, os, jinja2
+import sys, os, jinja2, js2py
 import folium # pip install folium
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton
-from PyQt5.QtWebEngineWidgets import QWebEngineView # pip install PyQtWebEngine
+from PyQt5.QtWebEngineWidgets import QWebEngineView, QWebEngineProfile # pip install PyQtWebEngine
 from PyQt5.QtCore import * 
 
 class DeGUI(QWidget):
-    layout = QVBoxLayout() 
+    layout = QVBoxLayout()
 
     def __init__(self):
         super().__init__()
         self.webView = QWebEngineView() 
-        self.webView.page().profile().setPersistentStoragePath(os.path.join(os.getcwd(), "local_storage"))
-        print("Local Storage Path -> ", self.webView.page().profile().persistentStoragePath())
-        
+        self.profile = QWebEngineProfile().defaultProfile()
+        self.profile.setPersistentCookiesPolicy(self.profile.ForcePersistentCookies)
+        print(self.profile.persistentCookiesPolicy())
+        self.profile.setPersistentStoragePath(os.path.join(os.getcwd(), "local_storage"))
+        print("Local Storage Path -> ", self.profile.persistentStoragePath())
+
     def initUI(self):
         self.setLayout(self.layout)
+        button = QPushButton("display cookie")
+        button.clicked.connect(self.on_click)
+        self.webView.
+
+    def on_click(self):
+        js = """
+            cookieVal = document.cookie;
+            document.getElementById("console").value = cookieVal;
+            """
+        result = js2py.eval_js(js)
 
     def saveMap(self):
         m = folium.Map(zoom_start=14, location=(37.377223, -121.990215))
@@ -31,12 +44,7 @@ class DeGUI(QWidget):
 
             function download() {
                 var user_input = document.getElementById("userInput");
-                localStorage.setItem('testObj', user_input.value)
-                
-                // Retrieve the object from storage
-                var retrievedObject = localStorage.getItem('testObj');
-
-                document.getElementById("console").value = retrievedObject;
+                document.cookie = user_input.value;
             }
 
             {% endmacro %}
