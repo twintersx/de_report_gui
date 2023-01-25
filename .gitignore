@@ -1,7 +1,7 @@
 # Custom inputs
 *.gif
 *.txt
-local_storage/
+recordings/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

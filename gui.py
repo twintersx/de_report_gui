@@ -5,13 +5,12 @@ from tkintermapview import TkinterMapView  # pip install tkintermapview
 import csv
 from functools import partial
 
-class MainApplication(tk.Frame):
-
+class RootWindow(tk.Frame):
+# ---------- INITIALIZATION --------- #
     def __init__(self, parent):
         tk.Frame.__init__(self, parent)
         self.parent = parent
         self.initGUI()
-
 
     def initGUI(self):
         self.pad = 5
@@ -21,8 +20,6 @@ class MainApplication(tk.Frame):
         self.initMapWidget()
         self.initMapPosition()
         self.initReportButtons()
-        self.initTextBox()
-
 
     def initFrames(self):   
         self.mapFrame = tk.Frame(self.parent, width=500, height=500)
@@ -45,33 +42,30 @@ class MainApplication(tk.Frame):
 
         self.userInputFrame = tk.Frame(self.controlFrame)
         self.userInputFrame.pack(fill='both', side=tk.BOTTOM, padx=self.pad, pady=self.pad)
+# ---------- END INITIALIZATION --------- #
     
-
+# ---------- CALENDAR ---------- #
     def closeInitialCal(self, event):
         self.initialDate = datetime.strptime(self.cal.get_date(), '%m/%d/%y')
-        self.initalDateButton.config(text=self.initialDate.strftime('%m/%d/%y'))
+        self.initalDateButton.config(text=self.initialDate.strftime('%m/%d/%Y'))
         self.calWindow.withdraw()
-
 
     def closeFinalCal(self, event):
         self.finalDate = datetime.strptime(self.cal.get_date(), '%m/%d/%y')
-        self.finalDateButton.config(text=self.finalDate.strftime('%m/%d/%y'))
+        self.finalDateButton.config(text=self.finalDate.strftime('%m/%d/%Y'))
         self.calWindow.withdraw()
-
 
     def setInitialDate(self):
         self.calWindow.deiconify()
         self.calWindow.bind('<Button-1>', self.closeInitialCal)
 
-
     def setFinalDate(self):
         self.calWindow.deiconify()
         self.calWindow.bind('<Button-1>', self.closeFinalCal)
 
-
     def initCalendar(self):
         today = date.today()
-        self.initialDate, self.finalDate = datetime.now(), datetime.now()
+        self.initialDate, self.finalDate = datetime.today(), datetime.today()
         self.cal = Calendar(self.calWindow, selectmode='day', year=today.year, month=today.month, day=today.day, background='orange', foreground='white', borderwidth=2)
         self.cal.pack()
 
@@ -87,7 +81,7 @@ class MainApplication(tk.Frame):
 
         self.loadButton = tk.Button(self.loadFrame, text="LOAD", command=self.onDateChangeClick)
         self.loadButton.pack(fill=tk.X, side=tk.BOTTOM) 
-
+# ---------- END CALENDAR ---------- #
     
     def onDateChangeClick(self):
         self.setDateReport()
@@ -102,8 +96,8 @@ class MainApplication(tk.Frame):
             self.header = reader[0]
             date_index = self.header.index("DATE")
             for row in reader[1:]:
-                report_date = datetime.strptime(row[date_index], '%d/%m/%Y')
-                if self.initialDate <= report_date <= self.finalDate:
+                report_date = datetime.strptime(row[date_index], '%m/%d/%Y')
+                if self.initialDate.day <= report_date.day <= self.finalDate.day:
                     self.report.append(row)
 
     def initMapWidget(self):
@@ -130,21 +124,19 @@ class MainApplication(tk.Frame):
         elif len(self.report) == 0:
             lat, long = 37.376774, -121.989967
 
-        self.changeMapPosition(lat, long, 13)
+        self.changeMapPosition(lat, long, 12)
     
-    def addMapMarkers(self, i):
-        marker = self.markers[i]
-        marker.setMarker(marker_color_circle='green', marker_color_outside='green')
-        self.markers[i] = marker
+    def markerFocus(self, marker, lat, long, zoom):
+        # make image viewable from here
+        self.changeMapPosition(lat, long, zoom)
 
     def initReportButtons(self):
-        self.clearWidgets(self.reportButtonFrame)
-        self.markers = []        
-        for i, row in enumerate(self.report):
+        self.clearWidgets(self.reportButtonFrame)       
+        for row in self.report:
             lat, long = float(row[self.lat_index]), float(row[self.long_index])
             text = f"{lat}, {long}" 
-            self.markers.append(self.map_widget.set_marker(lat, long))
-            reportButton = tk.Button(self.reportButtonFrame, text=text, command=partial(self.changeMapPosition, lat, long, 15))
+            marker = self.map_widget.set_marker(lat, long)
+            reportButton = tk.Button(self.reportButtonFrame, text=text, command=partial(self.markerFocus, marker, lat, long, 15))
             reportButton.pack(fill='both', padx=self.pad, pady=self.pad) 
 
     def clearWidgets(self, frame):
@@ -160,5 +152,5 @@ class MainApplication(tk.Frame):
             
 if __name__ == "__main__":
     root = tk.Tk()
-    MainApplication(root).pack(side='top', fill='both', expand=True)
+    RootWindow(root).pack(side='top', fill='both', expand=True)
     root.mainloop()

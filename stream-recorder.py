@@ -30,3 +30,5 @@ with imageio.get_writer(f'{dt_string}.gif', mode='I', fps = 5) as writer:
 
 cap.release()               # Close the window / Release webcam
 cv2.destroyAllWindows()     # De-allocate any associated memory usage
+
+# write name and add row to de_reports
