@@ -3,3 +3,11 @@ run gui in thread so you can request.get info from html id (textbox and radiobut
 default opens program on current date
 add radiobutton for street or highway
 Create calendar dropdown with date range to select
+
+set date range with two buttons 
+    olderst date (button) to newest date(button)
+add a show all DE Button
+change calender date to only show current day
+when you click a coord, zoom and show that color only
+
+create individual classes and seperate files from those and a main
