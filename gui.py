@@ -59,15 +59,15 @@ class RootWindow(tk.Frame):
 
     def initLogGUI(self):
         self.logFrame = tk.Frame(self.parent)
-        self.logFrame.pack()
+        self.logFrame.pack(fill='both')
 
         helv36 = tkFont.Font(family='Helvetica', size=36, weight='bold')
         logButton = tk.Button(self.logFrame, height=10, width=20, text="LOG\nDISENGAGMENT", command=StreamRecorder.captureFeed, bg='green', font=helv36)
-        logButton.pack(side=tk.TOP, fill=tk.BOTH, padx=self.pad, pady=self.pad)
+        logButton.pack(side=tk.TOP, fill='both', padx=self.pad, pady=self.pad)
 
         helv10 = tkFont.Font(family='Helvetica', size=20, weight='bold')
         endDriveButton = tk.Button(self.logFrame, text="END DRIVE", command=self.initReportGUI, bg='red', font=helv10)
-        endDriveButton.pack(side=tk.BOTTOM, fill=tk.BOTH, padx=self.pad, pady=self.pad)
+        endDriveButton.pack(side=tk.BOTTOM, fill='both', padx=self.pad, pady=self.pad)
         
     def initReportGUI(self):
         self.logFrame.destroy()
@@ -77,6 +77,7 @@ class RootWindow(tk.Frame):
         self.initMapWidget()
         self.initMapPosition()
         self.initReportButtons()
+        self.initSave()
 
     def initFrames(self):   
         self.mapFrame = tk.Frame(self.parent)
@@ -95,10 +96,14 @@ class RootWindow(tk.Frame):
         self.loadFrame.pack(fill=tk.X, side=tk.TOP, padx=self.pad, pady=self.pad)
 
         self.reportButtonFrame = tk.Frame(self.controlFrame)
-        self.reportButtonFrame.pack(fill='both', padx=self.pad, pady=self.pad)
+        self.reportButtonFrame.pack(fill=tk.X, padx=self.pad, pady=self.pad)
 
         self.userInputFrame = tk.Frame(self.controlFrame)
-        self.userInputFrame.pack(fill='both', side=tk.BOTTOM, padx=self.pad, pady=self.pad)
+        self.userInputFrame.pack(fill=tk.X, padx=self.pad, pady=self.pad)
+
+        self.logFrame = tk.Frame(self.controlFrame)
+        self.logFrame.pack(fill=tk.X, side=tk.BOTTOM, padx=self.pad, pady=self.pad)
+
 # ---------- END INITIALIZATION --------- #
     
 # ---------- CALENDAR ---------- #
@@ -186,6 +191,7 @@ class RootWindow(tk.Frame):
     def markerFocus(self, lat, long, zoom, marker):
         self.changeMapPosition(lat, long, zoom)
         self.clickMarker(marker)
+        self.initInputWidgets()
 
     def clickMarker(self, marker):
         if marker.image_hidden is True:
@@ -195,7 +201,8 @@ class RootWindow(tk.Frame):
 
     def initReportButtons(self):
         self.clearWidgets(self.reportButtonFrame) 
-        #tk.Label(self.reportButtonFrame, text="DISENGAGMENTS:").pack()    
+        self.clearWidgets(self.userInputFrame)
+        self.map_widget.delete_all_marker()   
         for row in self.report:
             lat, long = float(row[self.lat_index]), float(row[self.long_index])
             recFile = row[self.rec_file_index]
@@ -210,15 +217,24 @@ class RootWindow(tk.Frame):
             reportButton.pack(fill='both', padx=self.pad, pady=self.pad) 
 
     def clearWidgets(self, frame):
-        self.map_widget.delete_all_marker()
-
         widgets = frame.winfo_children()
         for w in widgets:
             w.destroy()
 
-    def initTextBox(self):
-        tk.Label(self.userInputFrame, text="DESCRIPTION OF REASON FOR DISENGAGMENT").pack(fill='both')
-        tk.Entry(self.userInputFrame).pack(fill='both')
+    def initInputWidgets(self):
+        self.clearWidgets(self.userInputFrame)
+        tk.Label(self.userInputFrame, text="DESCRIPTION OF REASON FOR DISENGAGMENT").pack()
+        tk.Text(self.userInputFrame, width=5, height=5).pack(fill=tk.X)
+        tk.Label(self.userInputFrame, text="SELECT ROAD TYPE: ").pack(side=tk.LEFT)
+        roadRadio = tk.Radiobutton(self.userInputFrame, text='Highway', value='Highway').pack(side=tk.RIGHT)
+        roadRadio = tk.Radiobutton(self.userInputFrame, text='Street', value='Street').pack(side=tk.RIGHT)
+
+    def initSave(self):
+        tk.Button(self.logFrame, text='SAVE').pack(fill=tk.X)
+        self.saveText = tk.Text(self.logFrame, width=5, height=5)
+        self.saveText.pack(fill=tk.X)
+        self.saveText.insert('1.0', "A log of the last save will be shown here") #1.0 line 1 char 0
+
             
 if __name__ == "__main__":
     root = tk.Tk()
