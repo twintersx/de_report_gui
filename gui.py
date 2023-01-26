@@ -1,19 +1,76 @@
 import tkinter as tk
+from tkinter import font as tkFont  # for convenience
 from tkcalendar import Calendar # pip install tkcalendar
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from tkintermapview import TkinterMapView  # pip install tkintermapview
 import csv
 from functools import partial
+import cv2, imageio
+from PIL import ImageTk, Image  # pip install pillow
+import os
+
+class StreamRecorder():
+    def captureFeed():
+        cap = cv2.VideoCapture(0)   # change to 1 for input
+
+        # discard buffer
+        while(True):
+            t0 = datetime.now()
+            tf = t0 + timedelta(seconds=60)
+            dt_string = t0.strftime("%m%d%Y_%H%M%S")
+
+            frames = []
+            while(datetime.now() < tf):
+                # ret checks return at each frame
+                ret, frame = cap.read()
+
+                # --- save frames for later --- #
+                frames.append(frame)
+
+                # The original input frame is shown in the window 
+                cv2.imshow('Racelogic Feed', frame)
+
+                # pressing 'a' simulates a new DE during recording 
+                if cv2.waitKey(1) & 0xFF == ord('a'):
+                    tf = tf + timedelta(seconds=10)
+
+        with imageio.get_writer(f'recordings\{dt_string}.gif', mode='I', fps = 5) as writer:
+            for i in range(0, len(frames), 10):
+                rgb_frame = cv2.cvtColor(frames[i], cv2.COLOR_BGR2RGB)
+                writer.append_data(rgb_frame)
+
+        cap.release()               # Close the window / Release webcam
+        cv2.destroyAllWindows()     # De-allocate any associated memory usage
+
+    def captureGPS():
+        #ROS
+        pass
+
+    def logToCSV():
+        pass
 
 class RootWindow(tk.Frame):
 # ---------- INITIALIZATION --------- #
     def __init__(self, parent):
         tk.Frame.__init__(self, parent)
         self.parent = parent
-        self.initGUI()
-
-    def initGUI(self):
         self.pad = 5
+        self.initLogGUI()
+
+    def initLogGUI(self):
+        self.logFrame = tk.Frame(self.parent)
+        self.logFrame.pack()
+
+        helv36 = tkFont.Font(family='Helvetica', size=36, weight='bold')
+        logButton = tk.Button(self.logFrame, height=10, width=20, text="LOG\nDISENGAGMENT", command=StreamRecorder.captureFeed, bg='green', font=helv36)
+        logButton.pack(side=tk.TOP, fill=tk.BOTH, padx=self.pad, pady=self.pad)
+
+        helv10 = tkFont.Font(family='Helvetica', size=20, weight='bold')
+        endDriveButton = tk.Button(self.logFrame, text="END DRIVE", command=self.initReportGUI, bg='red', font=helv10)
+        endDriveButton.pack(side=tk.BOTTOM, fill=tk.BOTH, padx=self.pad, pady=self.pad)
+        
+    def initReportGUI(self):
+        self.logFrame.destroy()
         self.initFrames()
         self.initCalendar()
         self.setDateReport()
@@ -22,8 +79,8 @@ class RootWindow(tk.Frame):
         self.initReportButtons()
 
     def initFrames(self):   
-        self.mapFrame = tk.Frame(self.parent, width=500, height=500)
-        self.mapFrame.pack(side=tk.RIGHT, padx=self.pad, pady=self.pad)
+        self.mapFrame = tk.Frame(self.parent)
+        self.mapFrame.pack(side=tk.RIGHT, fill='both', padx=self.pad, pady=self.pad)
 
         self.calWindow = tk.Toplevel()
         self.calWindow.withdraw()
@@ -88,10 +145,9 @@ class RootWindow(tk.Frame):
         self.initMapPosition()
         self.initReportButtons()
 
-
     def setDateReport(self):
         self.report = []
-        with open('de_reports.csv', newline='') as csvfile:
+        with open('reports.csv', newline='') as csvfile:
             reader = list(csv.reader(csvfile, delimiter=','))
             self.header = reader[0]
             date_index = self.header.index("DATE")
@@ -101,14 +157,15 @@ class RootWindow(tk.Frame):
                     self.report.append(row)
 
     def initMapWidget(self):
-        self.map_widget = TkinterMapView(self.mapFrame, width=500, height=500)
+        self.map_widget = TkinterMapView(self.mapFrame, width=1000, height=1000)
         self.lat_index = self.header.index("LATITUDE")
         self.long_index = self.header.index("LONGITUDE")
+        self.rec_file_index = self.header.index("RECORDING FILE")
 
     def changeMapPosition(self, lat, long, zoom):
         self.map_widget.set_position(lat, long)
         self.map_widget.set_zoom(zoom)
-        self.map_widget.pack()
+        self.map_widget.pack(fill='both')
     
     def initMapPosition(self):
         # at least one report
@@ -126,17 +183,30 @@ class RootWindow(tk.Frame):
 
         self.changeMapPosition(lat, long, 12)
     
-    def markerFocus(self, marker, lat, long, zoom):
-        # make image viewable from here
+    def markerFocus(self, lat, long, zoom, marker):
         self.changeMapPosition(lat, long, zoom)
+        self.clickMarker(marker)
+
+    def clickMarker(self, marker):
+        if marker.image_hidden is True:
+            marker.hide_image(False)
+        else:
+            marker.hide_image(True)
 
     def initReportButtons(self):
-        self.clearWidgets(self.reportButtonFrame)       
+        self.clearWidgets(self.reportButtonFrame) 
+        #tk.Label(self.reportButtonFrame, text="DISENGAGMENTS:").pack()    
         for row in self.report:
             lat, long = float(row[self.lat_index]), float(row[self.long_index])
-            text = f"{lat}, {long}" 
-            marker = self.map_widget.set_marker(lat, long)
-            reportButton = tk.Button(self.reportButtonFrame, text=text, command=partial(self.markerFocus, marker, lat, long, 15))
+            recFile = row[self.rec_file_index]
+            recDateObj = datetime.strptime(recFile.split('.')[0], '%m%d%Y_%H%M%S')
+            formatRecDate = datetime.strftime(recDateObj, '%m/%d/%Y %H:%M:%S')
+
+            text = f"{str(formatRecDate)}\n({lat}, {long})" 
+            gif = ImageTk.PhotoImage(Image.open(os.path.join(os.getcwd(), 'recordings', recFile)).resize((450, 375)))
+            marker = self.map_widget.set_marker(lat, long, image=gif, command=self.clickMarker)
+            marker.hide_image(True)
+            reportButton = tk.Button(self.reportButtonFrame, text=text, command=partial(self.markerFocus, lat, long, 15, marker))
             reportButton.pack(fill='both', padx=self.pad, pady=self.pad) 
 
     def clearWidgets(self, frame):
