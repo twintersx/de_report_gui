@@ -28,58 +28,37 @@ class StreamRecorder():
                 frames.append((datetime.now(), frame))
             sleep(0.25)  # fps
 
-    def captureGPS():
-        #ROS
-        pass
-
-    def logToCSV():
-        pass
-
 class RootWindow(tk.Frame):
 # ---------- INITIALIZATION --------- #
     def __init__(self, parent):
         tk.Frame.__init__(self, parent)
         self.parent = parent
         self.pad = 5
+        self.initHeaders()
         self.initLogGUI()
+
+    def initHeaders(self):
+        with open('reports.csv', newline='') as csvfile:
+            self.headers = list(csv.reader(csvfile, delimiter=','))[0]
+        self.dateIndex = self.headers.index("DATE")
+        self.vinIndex = self.headers.index("VIN")
+        self.roadIndex = self.headers.index('ROAD')
+        self.latIndex = self.headers.index('LATITUDE')
+        self.longIndex = self.headers.index('LONGITUDE')
+        self.recFileIndex = self.headers.index('RECORDING FILE')
+        self.descIndex = self.headers.index('DESCRIPTION')
 
     def initLogGUI(self):
         self.logFrame = tk.Frame(self.parent)
         self.logFrame.pack(fill='both')
-
+        
         helv36 = tkFont.Font(family='Helvetica', size=36, weight='bold')
-        self.logButton = tk.Button(self.logFrame, height=10, width=20, text="LOG\nDISENGAGMENT", command=self.saveGif, bg='green', font=helv36)
+        self.logButton = tk.Button(self.logFrame, height=10, width=20, text="RECORD\nDISENGAGMENT", command=self.logDEvent, bg='green', font=helv36)
         self.logButton.pack(side=tk.TOP, fill='both', padx=self.pad, pady=self.pad)
 
         helv10 = tkFont.Font(family='Helvetica', size=20, weight='bold')
         endDriveButton = tk.Button(self.logFrame, text="END DRIVE", command=self.initReportGUI, bg='red', font=helv10)
         endDriveButton.pack(side=tk.BOTTOM, fill='both', padx=self.pad, pady=self.pad)
-    
-
-    def saveGif(self):
-        global frames
-        
-        now = datetime.now()
-        gifDate = now.strftime("%d%m%Y_%H%M%S")
-        tMinus10 = now - timedelta(seconds=10)
-        self.logButton.config(text="RECORDING...", bg="red")
-        self.logButton.pack()
-
-        sleep(10)
-
-        gifFrames = []
-        for data in frames:
-            if data[0] >= tMinus10:
-                gifFrames.append(data[1])
-
-        with imageio.get_writer(f'recordings\{gifDate}.gif') as writer:
-            for f in gifFrames:
-                rgb_frame = cv2.cvtColor(f, cv2.COLOR_BGR2RGB)
-                writer.append_data(rgb_frame)
-            with lock:
-                frames = []
-
-        self.logButton.config(text="LOG\nDISENGAGMENT", bg='green')
 
     def initReportGUI(self):
         self.logFrame.destroy()
@@ -115,8 +94,52 @@ class RootWindow(tk.Frame):
 
         self.logFrame = tk.Frame(self.controlFrame)
         self.logFrame.pack(fill=tk.X, side=tk.BOTTOM, padx=self.pad, pady=self.pad)
-
 # ---------- END INITIALIZATION --------- #
+
+# ---------- RECORD WINDOW ---------- #
+    def logDEvent(self):
+        self.recordGIF()
+        self.captureGPS()
+        self.writeNewCSVRow()
+
+    def recordGIF(self):
+        global frames
+        self.recordTime = datetime.now()
+        self.gifFileName = self.recordTime.strftime("%d%m%Y_%H%M%S") + '.gif'
+        tMinus10 = self.recordTime - timedelta(seconds=10)
+        sleep(10)
+        gifFrames = []
+        for data in frames:
+            if data[0] >= tMinus10:
+                gifFrames.append(data[1])
+
+        with imageio.get_writer(f'recordings\{self.gifFileName}') as writer:
+            for f in gifFrames:
+                rgb_frame = cv2.cvtColor(f, cv2.COLOR_BGR2RGB)
+                writer.append_data(rgb_frame)
+            with lock:
+                frames = []
+
+    def captureGPS(self):
+        #ROS
+        self.latitude = ''
+        self.longitude = ''
+        pass
+
+    def writeNewCSVRow(self):
+        newLog = [None] * len(self.headers)
+        newLog[self.dateIndex] = self.recordTime.strftime('%m/%d/%Y')
+        newLog[self.vinIndex] = '1N4AZ1CP7KC308251'
+        newLog[self.roadIndex] = ''
+        newLog[self.latIndex] = self.latitude
+        newLog[self.longIndex] = self.longitude
+        newLog[self.recFileIndex] = self.gifFileName
+        newLog[self.descIndex] = ''
+
+        with open('reports.csv', 'a', newline='') as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow(newLog)
+# ---------- END RECORD WINDOW ---------- #
     
 # ---------- CALENDAR ---------- #
     def closeInitialCal(self, event):
@@ -166,18 +189,13 @@ class RootWindow(tk.Frame):
         self.report = []
         with open('reports.csv', newline='') as csvfile:
             reader = list(csv.reader(csvfile, delimiter=','))
-            self.header = reader[0]
-            date_index = self.header.index("DATE")
             for row in reader[1:]:
-                report_date = datetime.strptime(row[date_index], '%m/%d/%Y')
+                report_date = datetime.strptime(row[self.dateIndex], '%m/%d/%Y')
                 if self.initialDate.day <= report_date.day <= self.finalDate.day:
                     self.report.append(row)
 
     def initMapWidget(self):
         self.map_widget = TkinterMapView(self.mapFrame, width=1000, height=1000)
-        self.lat_index = self.header.index("LATITUDE")
-        self.long_index = self.header.index("LONGITUDE")
-        self.rec_file_index = self.header.index("RECORDING FILE")
 
     def changeMapPosition(self, lat, long, zoom):
         self.map_widget.set_position(lat, long)
@@ -189,8 +207,8 @@ class RootWindow(tk.Frame):
         if len(self.report) >= 1:
             lats, longs = [], []
             for row in self.report:
-                lats.append(float(row[self.lat_index]))
-                longs.append(float(row[self.long_index]))
+                lats.append(float(row[self.latIndex]))
+                longs.append(float(row[self.longIndex]))
             lat = sum(lats) / len(lats)
             long = sum(longs) / len(longs)
 
@@ -216,8 +234,8 @@ class RootWindow(tk.Frame):
         self.clearWidgets(self.userInputFrame)
         self.map_widget.delete_all_marker()   
         for row in self.report:
-            lat, long = float(row[self.lat_index]), float(row[self.long_index])
-            recFile = row[self.rec_file_index]
+            lat, long = float(row[self.latIndex]), float(row[self.longIndex])
+            recFile = row[self.recFileIndex]
             recDateObj = datetime.strptime(recFile.split('.')[0], '%m%d%Y_%H%M%S')
             formatRecDate = datetime.strftime(recDateObj, '%m/%d/%Y %H:%M:%S')
 
