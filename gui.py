@@ -53,7 +53,7 @@ class RootWindow(tk.Frame):
         self.logFrame.pack(fill='both')
         
         helv36 = tkFont.Font(family='Helvetica', size=36, weight='bold')
-        self.logButton = tk.Button(self.logFrame, height=10, width=20, text="RECORD\nDISENGAGMENT", command=self.logDEvent, bg='green', font=helv36)
+        self.logButton = tk.Button(self.logFrame, height=10, width=20, text="RECORD\nDISENGAGMENT", command=self.logDEvent, bg='green', font=helv36)    #
         self.logButton.pack(side=tk.TOP, fill='both', padx=self.pad, pady=self.pad)
 
         helv10 = tkFont.Font(family='Helvetica', size=20, weight='bold')
@@ -92,16 +92,14 @@ class RootWindow(tk.Frame):
         self.userInputFrame = tk.Frame(self.controlFrame)
         self.userInputFrame.pack(fill=tk.X, padx=self.pad, pady=self.pad)
 
-        self.logFrame = tk.Frame(self.controlFrame)
-        self.logFrame.pack(fill=tk.X, side=tk.BOTTOM, padx=self.pad, pady=self.pad)
+        self.saveFrame = tk.Frame(self.controlFrame)
+        self.saveFrame.pack(fill=tk.X, side=tk.BOTTOM, padx=self.pad, pady=self.pad)
+
+    def initMapWidget(self):
+        self.map_widget = TkinterMapView(self.mapFrame, width=1000, height=1000)
 # ---------- END INITIALIZATION --------- #
 
 # ---------- RECORD WINDOW ---------- #
-    def logDEvent(self):
-        self.recordGIF()
-        self.captureGPS()
-        self.writeNewCSVRow()
-
     def recordGIF(self):
         global frames
         self.recordTime = datetime.now()
@@ -139,6 +137,11 @@ class RootWindow(tk.Frame):
         with open('reports.csv', 'a', newline='') as csvfile:
             writer = csv.writer(csvfile)
             writer.writerow(newLog)
+
+    def logDEvent(self):
+        self.recordGIF()
+        self.captureGPS()
+        self.writeNewCSVRow()
 # ---------- END RECORD WINDOW ---------- #
     
 # ---------- CALENDAR ---------- #
@@ -180,6 +183,7 @@ class RootWindow(tk.Frame):
         self.loadButton.pack(fill=tk.X, side=tk.BOTTOM) 
 # ---------- END CALENDAR ---------- #
     
+# ---------- BUTTON FUNCTIONALITY ---------- #
     def onDateChangeClick(self):
         self.setDateReport()
         self.initMapPosition()
@@ -193,9 +197,6 @@ class RootWindow(tk.Frame):
                 report_date = datetime.strptime(row[self.dateIndex], '%m/%d/%Y')
                 if self.initialDate.day <= report_date.day <= self.finalDate.day:
                     self.report.append(row)
-
-    def initMapWidget(self):
-        self.map_widget = TkinterMapView(self.mapFrame, width=1000, height=1000)
 
     def changeMapPosition(self, lat, long, zoom):
         self.map_widget.set_position(lat, long)
@@ -217,11 +218,12 @@ class RootWindow(tk.Frame):
             lat, long = 37.376774, -121.989967
 
         self.changeMapPosition(lat, long, 12)
-    
-    def markerFocus(self, lat, long, zoom, marker):
+
+    def disengagmentFocus(self, i, lat, long, zoom, marker, descBox):
         self.changeMapPosition(lat, long, zoom)
         self.clickMarker(marker)
-        self.initInputWidgets()
+        self.initInputWidgets(descBox)
+        self.highlightButton(self.buttons[i])
 
     def clickMarker(self, marker):
         if marker.image_hidden is True:
@@ -229,42 +231,58 @@ class RootWindow(tk.Frame):
         else:
             marker.hide_image(True)
 
+    def highlightButton(self, reportButton):
+        for button in self.buttons:
+            if button == reportButton:
+                reportButton.config(bg='red')
+            else:
+                button.config(bg='white')
+
     def initReportButtons(self):
-        self.clearWidgets(self.reportButtonFrame) 
-        self.clearWidgets(self.userInputFrame)
+        self.clearWidgets(self.reportButtonFrame, 'destroy') 
+        self.clearWidgets(self.userInputFrame, 'destroy')
         self.map_widget.delete_all_marker()   
-        for row in self.report:
+        self.buttons = []
+        for i, row in enumerate(self.report):
             lat, long = float(row[self.latIndex]), float(row[self.longIndex])
             recFile = row[self.recFileIndex]
             recDateObj = datetime.strptime(recFile.split('.')[0], '%m%d%Y_%H%M%S')
             formatRecDate = datetime.strftime(recDateObj, '%m/%d/%Y %H:%M:%S')
+            
+            descBox = tk.Text(self.userInputFrame, width=5, height=5)   
 
-            text = f"{str(formatRecDate)}\n({lat}, {long})" 
+            textOnButton = f"{str(formatRecDate)}\n({lat}, {long})" 
             gif = ImageTk.PhotoImage(Image.open(os.path.join(os.getcwd(), 'recordings', recFile)).resize((450, 375)))
             marker = self.map_widget.set_marker(lat, long, image=gif, command=self.clickMarker)
             marker.hide_image(True)
-            reportButton = tk.Button(self.reportButtonFrame, text=text, command=partial(self.markerFocus, lat, long, 15, marker))
+            reportButton = tk.Button(self.reportButtonFrame, text=textOnButton, command=partial(self.disengagmentFocus, i, lat, long, 15, marker, descBox))
             reportButton.pack(fill='both', padx=self.pad, pady=self.pad) 
+            self.buttons.append(reportButton)
 
-    def clearWidgets(self, frame):
+    def clearWidgets(self, frame, action):
         widgets = frame.winfo_children()
         for w in widgets:
-            w.destroy()
+            if action == 'destroy':
+                w.destroy()
+            elif action == 'hide':
+                w.pack_forget()
 
-    def initInputWidgets(self):
-        self.clearWidgets(self.userInputFrame)
+    def initInputWidgets(self, descBox):
+        self.clearWidgets(self.userInputFrame, 'hide')  #all widgets are being removed so when pack is called, it is removing the box and not attached
         tk.Label(self.userInputFrame, text="DESCRIPTION OF REASON FOR DISENGAGMENT").pack()
-        tk.Text(self.userInputFrame, width=5, height=5).pack(fill=tk.X)
+        descBox.config(highlightthickness=3, highlightbackground = "red", highlightcolor='red')
+        descBox.pack(fill=tk.X)
         tk.Label(self.userInputFrame, text="SELECT ROAD TYPE: ").pack(side=tk.LEFT)
-        roadRadio = tk.Radiobutton(self.userInputFrame, text='Highway', value='Highway').pack(side=tk.RIGHT)
-        roadRadio = tk.Radiobutton(self.userInputFrame, text='Street', value='Street').pack(side=tk.RIGHT)
+        self.radioButton = tk.Radiobutton(self.userInputFrame, text='Highway', value='Highway').pack(side=tk.RIGHT)
+        self.radioButton = tk.Radiobutton(self.userInputFrame, text='Street', value='Street').pack(side=tk.RIGHT)
 
     def initSave(self):
-        tk.Button(self.logFrame, text='SAVE').pack(fill=tk.X)
-        self.saveText = tk.Text(self.logFrame, width=5, height=5)
+        tk.Button(self.saveFrame, text='SAVE').pack(fill=tk.X)
+        self.saveText = tk.Text(self.saveFrame, width=5, height=5)
         self.saveText.pack(fill=tk.X)
         self.saveText.insert('1.0', "A log of the last save will be shown here") #1.0 line 1 char 0
-            
+# ---------- END BUTTON FUNCTIONALITY ---------- #
+    
 if __name__ == "__main__":
     StreamRecorder().threadStream
     root = tk.Tk()

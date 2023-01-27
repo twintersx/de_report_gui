@@ -1,16 +1,16 @@
 DONE: Switch to pyqt5
-run gui in thread so you can request.get info from html id (textbox and radiobutton)
-default opens program on current date
-add radiobutton for street or highway
-Create calendar dropdown with date range to select
+DONE: default opens program on current date
+DONE: add radiobutton for street or highway
+DONE: Create calendar dropdown with date range to select
 
-set date range with two buttons 
+DONE: set date range with two buttons 
     olderst date (button) to newest date(button)
-add a show all DE Button
-change calender date to only show current day
 when you click a coord, zoom and show that color only
-
-create individual classes and seperate files from those and a main
 
 found bug when selecting date from 2022 to 2023
 add recording button when pressed so it doesnt look hanging
+
+on date change or window close, run save function !
+
+add functionality for GPS receive 
+get .gif running video
