@@ -55,3 +55,5 @@ How do we relate the html code back to python?
 
 
 sEEMS like localstorage only runs on the browser side and not on the server side. I think cookies may be the only way to interact that way
+
+https://stackoverflow.com/questions/10525185/python-threading-how-do-i-lock-a-thread

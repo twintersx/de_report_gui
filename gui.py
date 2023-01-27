@@ -26,19 +26,7 @@ class StreamRecorder():
             ret, frame = cap.read()
             with lock:
                 frames.append((datetime.now(), frame))
-            sleep(0.2)  #essentially fps
-                
-
-    """def saveGif(self):
-        t0 = datetime.now()
-        print("helo")
-        dt_string = t0.strftime("%d%m%Y_%H%M%S")
-        print(self.frames)
-
-        with imageio.get_writer(f'recordings\{dt_string}.gif', mode='I', fps = 5) as writer:
-            for i in range(0, len(frames), 10):
-                rgb_frame = cv2.cvtColor(frames[i], cv2.COLOR_BGR2RGB)
-                writer.append_data(rgb_frame)"""
+            sleep(0.25)  # fps
 
     def captureGPS():
         #ROS
@@ -60,18 +48,23 @@ class RootWindow(tk.Frame):
         self.logFrame.pack(fill='both')
 
         helv36 = tkFont.Font(family='Helvetica', size=36, weight='bold')
-        logButton = tk.Button(self.logFrame, height=10, width=20, text="LOG\nDISENGAGMENT", command=self.saveGif, bg='green', font=helv36)
-        logButton.pack(side=tk.TOP, fill='both', padx=self.pad, pady=self.pad)
+        self.logButton = tk.Button(self.logFrame, height=10, width=20, text="LOG\nDISENGAGMENT", command=self.saveGif, bg='green', font=helv36)
+        self.logButton.pack(side=tk.TOP, fill='both', padx=self.pad, pady=self.pad)
 
         helv10 = tkFont.Font(family='Helvetica', size=20, weight='bold')
-        endDriveButton = tk.Button(self.logFrame, text="END DRIVE", command=self.closeLogGUI, bg='red', font=helv10)
+        endDriveButton = tk.Button(self.logFrame, text="END DRIVE", command=self.initReportGUI, bg='red', font=helv10)
         endDriveButton.pack(side=tk.BOTTOM, fill='both', padx=self.pad, pady=self.pad)
     
+
     def saveGif(self):
         global frames
+        
         now = datetime.now()
         gifDate = now.strftime("%d%m%Y_%H%M%S")
         tMinus10 = now - timedelta(seconds=10)
+        self.logButton.config(text="RECORDING...", bg="red")
+        self.logButton.pack()
+
         sleep(10)
 
         gifFrames = []
@@ -86,13 +79,10 @@ class RootWindow(tk.Frame):
             with lock:
                 frames = []
 
-    def closeLogGUI(self):
-        StreamRecorder.cap.release()    # Close the window / Release webcam
-        cv2.destroyAllWindows()         # De-allocate any associated memory usage
-        self.logFrame.destroy()
-        self.initReportGUI()
+        self.logButton.config(text="LOG\nDISENGAGMENT", bg='green')
 
     def initReportGUI(self):
+        self.logFrame.destroy()
         self.initFrames()
         self.initCalendar()
         self.setDateReport()
@@ -256,7 +246,6 @@ class RootWindow(tk.Frame):
         self.saveText = tk.Text(self.logFrame, width=5, height=5)
         self.saveText.pack(fill=tk.X)
         self.saveText.insert('1.0', "A log of the last save will be shown here") #1.0 line 1 char 0
-
             
 if __name__ == "__main__":
     StreamRecorder().threadStream
