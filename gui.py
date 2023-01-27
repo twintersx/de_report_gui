@@ -8,39 +8,37 @@ from functools import partial
 import cv2, imageio
 from PIL import ImageTk, Image  # pip install pillow
 import os
+import threading
+from time import sleep
+
+frames = []
+lock = threading.Lock()
 
 class StreamRecorder():
-    def captureFeed():
-        cap = cv2.VideoCapture(0)   # change to 1 for input
+    def __init__(self):
+        t = threading.Thread(target=self.threadStream, daemon=True)
+        t.start()
 
-        # discard buffer
-        while(True):
-            t0 = datetime.now()
-            tf = t0 + timedelta(seconds=60)
-            dt_string = t0.strftime("%m%d%Y_%H%M%S")
+    def threadStream(self):
+        global frames
+        cap = cv2.VideoCapture(0)
+        while True:
+            ret, frame = cap.read()
+            with lock:
+                frames.append((datetime.now(), frame))
+            sleep(0.2)  #essentially fps
+                
 
-            frames = []
-            while(datetime.now() < tf):
-                # ret checks return at each frame
-                ret, frame = cap.read()
-
-                # --- save frames for later --- #
-                frames.append(frame)
-
-                # The original input frame is shown in the window 
-                cv2.imshow('Racelogic Feed', frame)
-
-                # pressing 'a' simulates a new DE during recording 
-                if cv2.waitKey(1) & 0xFF == ord('a'):
-                    tf = tf + timedelta(seconds=10)
+    """def saveGif(self):
+        t0 = datetime.now()
+        print("helo")
+        dt_string = t0.strftime("%d%m%Y_%H%M%S")
+        print(self.frames)
 
         with imageio.get_writer(f'recordings\{dt_string}.gif', mode='I', fps = 5) as writer:
             for i in range(0, len(frames), 10):
                 rgb_frame = cv2.cvtColor(frames[i], cv2.COLOR_BGR2RGB)
-                writer.append_data(rgb_frame)
-
-        cap.release()               # Close the window / Release webcam
-        cv2.destroyAllWindows()     # De-allocate any associated memory usage
+                writer.append_data(rgb_frame)"""
 
     def captureGPS():
         #ROS
@@ -62,15 +60,39 @@ class RootWindow(tk.Frame):
         self.logFrame.pack(fill='both')
 
         helv36 = tkFont.Font(family='Helvetica', size=36, weight='bold')
-        logButton = tk.Button(self.logFrame, height=10, width=20, text="LOG\nDISENGAGMENT", command=StreamRecorder.captureFeed, bg='green', font=helv36)
+        logButton = tk.Button(self.logFrame, height=10, width=20, text="LOG\nDISENGAGMENT", command=self.saveGif, bg='green', font=helv36)
         logButton.pack(side=tk.TOP, fill='both', padx=self.pad, pady=self.pad)
 
         helv10 = tkFont.Font(family='Helvetica', size=20, weight='bold')
-        endDriveButton = tk.Button(self.logFrame, text="END DRIVE", command=self.initReportGUI, bg='red', font=helv10)
+        endDriveButton = tk.Button(self.logFrame, text="END DRIVE", command=self.closeLogGUI, bg='red', font=helv10)
         endDriveButton.pack(side=tk.BOTTOM, fill='both', padx=self.pad, pady=self.pad)
-        
-    def initReportGUI(self):
+    
+    def saveGif(self):
+        global frames
+        now = datetime.now()
+        gifDate = now.strftime("%d%m%Y_%H%M%S")
+        tMinus10 = now - timedelta(seconds=10)
+        sleep(10)
+
+        gifFrames = []
+        for data in frames:
+            if data[0] >= tMinus10:
+                gifFrames.append(data[1])
+
+        with imageio.get_writer(f'recordings\{gifDate}.gif') as writer:
+            for f in gifFrames:
+                rgb_frame = cv2.cvtColor(f, cv2.COLOR_BGR2RGB)
+                writer.append_data(rgb_frame)
+            with lock:
+                frames = []
+
+    def closeLogGUI(self):
+        StreamRecorder.cap.release()    # Close the window / Release webcam
+        cv2.destroyAllWindows()         # De-allocate any associated memory usage
         self.logFrame.destroy()
+        self.initReportGUI()
+
+    def initReportGUI(self):
         self.initFrames()
         self.initCalendar()
         self.setDateReport()
@@ -237,6 +259,7 @@ class RootWindow(tk.Frame):
 
             
 if __name__ == "__main__":
+    StreamRecorder().threadStream
     root = tk.Tk()
     RootWindow(root).pack(side='top', fill='both', expand=True)
     root.mainloop()

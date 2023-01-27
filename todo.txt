@@ -13,3 +13,4 @@ when you click a coord, zoom and show that color only
 create individual classes and seperate files from those and a main
 
 found bug when selecting date from 2022 to 2023
+add recording button when pressed so it doesnt look hanging
