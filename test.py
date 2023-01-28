@@ -1,21 +1,49 @@
 import tkinter as tk
-from time import sleep
+from PIL import Image, ImageTk
+from itertools import count, cycle
+ 
+class ImageLabel(tk.Label):
 
-window = tk.Tk()
 
-def open_command():
-    open_btn.config(bg='green')
-    sleep(3)
-    close_btn.config(bg='white')
+    def load(self, im):
 
-def close_command():
-    open_btn.config(bg='white')
-    close_btn.config(bg='red')
+        if isinstance(im, str):
+            im = Image.open(im)
+        frames = []
 
-font=('Times New Roman', 12)
-open_btn = tk.Button(window, text='Open', font=font, fg='green', bg='white', width=5, command=open_command)
-open_btn.pack()
-close_btn = tk.Button(window, text='Close', font=font, fg='red', bg='white', width=5, command=close_command)
-close_btn.pack()
+        try:
+            for i in count(1):
+                frames.append(ImageTk.PhotoImage(im.copy()))
+                im.seek(i)
+        except EOFError:
+            pass
+        self.frames = cycle(frames)
+ 
+        try:
+            self.delay = im.info['duration']
+        except:
+            self.delay = 100
+ 
+        if len(frames) == 1:
+            self.config(image=next(self.frames))
+        else:
+            self.next_frame()
+ 
+    def unload(self):
+        self.config(image=None)
+        self.frames = None
+ 
+    def next_frame(self):
+        if self.frames:
+            self.config(image=next(self.frames))
+            self.after(self.delay, self.next_frame)
+ 
+#demo :
+root = tk.Tk()
+lbl = ImageLabel(root) #put imagelabel into marker? 
+lbl.pack()
+lbl.load(r'C:\Users\X076979\OneDrive - Nissan Motor Corporation\Desktop\Projects\de_report_gui\recordings\01272023_154237.gif')
+root.mainloop()
 
-window.mainloop()
+#instead of putting in label as our vessel to display image, 
+# our vessel needs to be the marker

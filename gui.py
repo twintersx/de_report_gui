@@ -10,14 +10,35 @@ from PIL import ImageTk, Image  # pip install pillow
 import os
 import threading
 from time import sleep
+from itertools import count, cycle
 
 frames = []
+gifImage = None
 lock = threading.Lock()
+
+class GifLoading():
+    def __init__(self, im):
+        self.im = im
+        tg = threading.Thread(target=self.gifStream, daemon=True)
+        tg.start()
+
+    def gifStream(self):
+        global gifImage
+        frame = Image.open(self.im)
+        while True:
+            try:
+                for i in count(1):
+                    with lock:
+                        gifImage = ImageTk.PhotoImage(frame.copy())
+                    frame.seek(i)
+            except EOFError:
+                pass
+            
 
 class StreamRecorder():
     def __init__(self):
-        t = threading.Thread(target=self.threadStream, daemon=True)
-        t.start()
+        ts = threading.Thread(target=self.threadStream, daemon=True)
+        ts.start()
 
     def threadStream(self):
         global frames
@@ -103,7 +124,7 @@ class RootWindow(tk.Frame):
     def recordGIF(self):
         global frames
         self.recordTime = datetime.now()
-        self.gifFileName = self.recordTime.strftime("%d%m%Y_%H%M%S") + '.gif'
+        self.gifFileName = self.recordTime.strftime("%m%d%Y_%H%M%S") + '.gif'
         tMinus10 = self.recordTime - timedelta(seconds=10)
         sleep(10)
         gifFrames = []
@@ -238,6 +259,7 @@ class RootWindow(tk.Frame):
             else:
                 button.config(bg='white')
 
+
     def initReportButtons(self):
         self.clearWidgets(self.reportButtonFrame, 'destroy') 
         self.clearWidgets(self.userInputFrame, 'destroy')
@@ -248,13 +270,18 @@ class RootWindow(tk.Frame):
             recFile = row[self.recFileIndex]
             recDateObj = datetime.strptime(recFile.split('.')[0], '%m%d%Y_%H%M%S')
             formatRecDate = datetime.strftime(recDateObj, '%m/%d/%Y %H:%M:%S')
-            
-            descBox = tk.Text(self.userInputFrame, width=5, height=5)   
+            textOnButton = f"{str(formatRecDate)}\n({lat}, {long})"   
 
-            textOnButton = f"{str(formatRecDate)}\n({lat}, {long})" 
-            gif = ImageTk.PhotoImage(Image.open(os.path.join(os.getcwd(), 'recordings', recFile)).resize((450, 375)))
-            marker = self.map_widget.set_marker(lat, long, image=gif, command=self.clickMarker)
+            GifLoading(os.path.join(os.getcwd(), 'recordings', recFile)).gifStream()    #start gif thread
+            with lock:
+                gif_frame = gifImage
+            marker = self.map_widget.set_marker(lat, long, command=self.clickMarker, image=gif_frame)
+
+
+
+
             marker.hide_image(True)
+            descBox = tk.Text(self.userInputFrame, width=5, height=5) 
             reportButton = tk.Button(self.reportButtonFrame, text=textOnButton, command=partial(self.disengagmentFocus, i, lat, long, 15, marker, descBox))
             reportButton.pack(fill='both', padx=self.pad, pady=self.pad) 
             self.buttons.append(reportButton)
