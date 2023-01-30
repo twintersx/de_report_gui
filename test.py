@@ -1,6 +1,7 @@
 import tkinter as tk
 from PIL import Image, ImageTk
 from itertools import count, cycle
+from time import sleep
  
 class ImageLabel(tk.Label):
 
@@ -42,6 +43,7 @@ class ImageLabel(tk.Label):
 root = tk.Tk()
 lbl = ImageLabel(root) #put imagelabel into marker? 
 lbl.pack()
+#tk.Button(lbl, command=sleep(2), height=10, width=10).pack()
 lbl.load(r'C:\Users\X076979\OneDrive - Nissan Motor Corporation\Desktop\Projects\de_report_gui\recordings\01272023_154237.gif')
 root.mainloop()
 

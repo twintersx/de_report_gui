@@ -14,3 +14,7 @@ on date change or window close, run save function !
 
 add functionality for GPS receive 
 get .gif running video
+
+play toplevel cal window in correct postions
+
+start only one thread for playing gifs and feed it imagess

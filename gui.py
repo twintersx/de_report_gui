@@ -12,41 +12,21 @@ import threading
 from time import sleep
 from itertools import count, cycle
 
-frames = []
-gifImage = None
+streamFrm = []
 lock = threading.Lock()
 
-class GifLoading():
-    def __init__(self, im):
-        self.im = im
-        tg = threading.Thread(target=self.gifStream, daemon=True)
-        tg.start()
-
-    def gifStream(self):
-        global gifImage
-        frame = Image.open(self.im)
-        while True:
-            try:
-                for i in count(1):
-                    with lock:
-                        gifImage = ImageTk.PhotoImage(frame.copy())
-                    frame.seek(i)
-            except EOFError:
-                pass
-            
-
-class StreamRecorder():
+class LiveStream():
     def __init__(self):
-        ts = threading.Thread(target=self.threadStream, daemon=True)
+        ts = threading.Thread(target=self.stream_start, daemon=True)
         ts.start()
 
-    def threadStream(self):
-        global frames
+    def stream_start(self):
+        global streamFrm
         cap = cv2.VideoCapture(0)
         while True:
             ret, frame = cap.read()
             with lock:
-                frames.append((datetime.now(), frame))
+                streamFrm.append((datetime.now(), frame))
             sleep(0.25)  # fps
 
 class RootWindow(tk.Frame):
@@ -116,19 +96,23 @@ class RootWindow(tk.Frame):
         self.saveFrame = tk.Frame(self.controlFrame)
         self.saveFrame.pack(fill=tk.X, side=tk.BOTTOM, padx=self.pad, pady=self.pad)
 
+        self.gifWindow = tk.Toplevel()
+        self.gifWindow.withdraw()
+        self.gifWindow.attributes('-topmost',True)
+
     def initMapWidget(self):
         self.map_widget = TkinterMapView(self.mapFrame, width=1000, height=1000)
 # ---------- END INITIALIZATION --------- #
 
 # ---------- RECORD WINDOW ---------- #
     def recordGIF(self):
-        global frames
+        global streamFrm
         self.recordTime = datetime.now()
         self.gifFileName = self.recordTime.strftime("%m%d%Y_%H%M%S") + '.gif'
         tMinus10 = self.recordTime - timedelta(seconds=10)
         sleep(10)
         gifFrames = []
-        for data in frames:
+        for data in streamFrm:
             if data[0] >= tMinus10:
                 gifFrames.append(data[1])
 
@@ -137,7 +121,7 @@ class RootWindow(tk.Frame):
                 rgb_frame = cv2.cvtColor(f, cv2.COLOR_BGR2RGB)
                 writer.append_data(rgb_frame)
             with lock:
-                frames = []
+                streamFrm = []
 
     def captureGPS(self):
         #ROS
@@ -240,12 +224,6 @@ class RootWindow(tk.Frame):
 
         self.changeMapPosition(lat, long, 12)
 
-    def disengagmentFocus(self, i, lat, long, zoom, marker, descBox):
-        self.changeMapPosition(lat, long, zoom)
-        self.clickMarker(marker)
-        self.initInputWidgets(descBox)
-        self.highlightButton(self.buttons[i])
-
     def clickMarker(self, marker):
         if marker.image_hidden is True:
             marker.hide_image(False)
@@ -259,30 +237,62 @@ class RootWindow(tk.Frame):
             else:
                 button.config(bg='white')
 
+    def displayGif(self, recFile, textOnButton):
+        self.clearWidgets(self.gifWindow, 'destroy')
+        self.gifWindow.title(textOnButton)
+
+        gifPath = os.path.join(os.getcwd(), 'recordings', recFile)
+        self.gifFrame = tk.Label(self.gifWindow)
+        self.gifFrame.pack()
+
+        if isinstance(gifPath, str):
+            im = Image.open(gifPath)
+        frames = []
+        self.frames = cycle(frames)
+        self.delay = im.info['duration']
+
+        try:
+            for i in count(1):
+                frames.append(ImageTk.PhotoImage(im.copy()))
+                im.seek(i)
+        except EOFError:
+            pass
+
+        self.gifWindow.deiconify()
+        self.next_frame()
+    
+    def next_frame(self):
+        if self.frames:
+            self.gifFrame.config(image=next(self.frames))
+            self.gifFrame.after(self.delay, self.next_frame)
+
+    def disengagmentFocus(self, i, lat, long, zoom, recFile, descBox, textOnButton):
+        self.changeMapPosition(lat, long, zoom)
+        self.initInputWidgets(descBox)
+        self.highlightButton(self.buttons[i])
+        self.clickMarker(self.markers[i])
+        self.displayGif(recFile, textOnButton)
 
     def initReportButtons(self):
         self.clearWidgets(self.reportButtonFrame, 'destroy') 
         self.clearWidgets(self.userInputFrame, 'destroy')
         self.map_widget.delete_all_marker()   
         self.buttons = []
+        self.markers = []
         for i, row in enumerate(self.report):
             lat, long = float(row[self.latIndex]), float(row[self.longIndex])
+
             recFile = row[self.recFileIndex]
             recDateObj = datetime.strptime(recFile.split('.')[0], '%m%d%Y_%H%M%S')
             formatRecDate = datetime.strftime(recDateObj, '%m/%d/%Y %H:%M:%S')
-            textOnButton = f"{str(formatRecDate)}\n({lat}, {long})"   
-
-            GifLoading(os.path.join(os.getcwd(), 'recordings', recFile)).gifStream()    #start gif thread
-            with lock:
-                gif_frame = gifImage
-            marker = self.map_widget.set_marker(lat, long, command=self.clickMarker, image=gif_frame)
-
-
-
-
-            marker.hide_image(True)
+            textOnButton = f"{str(formatRecDate)} \n({lat}, {long})"
+              
             descBox = tk.Text(self.userInputFrame, width=5, height=5) 
-            reportButton = tk.Button(self.reportButtonFrame, text=textOnButton, command=partial(self.disengagmentFocus, i, lat, long, 15, marker, descBox))
+
+            marker = self.map_widget.set_marker(lat, long, command=partial(self.disengagmentFocus, i, lat, long, 15, recFile, descBox, textOnButton))
+            self.markers.append(marker)
+
+            reportButton = tk.Button(self.reportButtonFrame, text=textOnButton, command=partial(self.disengagmentFocus, i, lat, long, 15, recFile, descBox, textOnButton))
             reportButton.pack(fill='both', padx=self.pad, pady=self.pad) 
             self.buttons.append(reportButton)
 
@@ -311,7 +321,7 @@ class RootWindow(tk.Frame):
 # ---------- END BUTTON FUNCTIONALITY ---------- #
     
 if __name__ == "__main__":
-    StreamRecorder().threadStream
+    LiveStream().stream_start
     root = tk.Tk()
     RootWindow(root).pack(side='top', fill='both', expand=True)
     root.mainloop()
