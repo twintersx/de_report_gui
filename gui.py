@@ -79,7 +79,6 @@ class RootWindow(tk.Frame):
         self.calWindow.withdraw()
         self.calWindow.resizable(False, False)
         
-
         self.controlFrame = tk.Frame(self.parent)
         self.controlFrame.pack(fill='both', side=tk.LEFT, padx=self.pad, pady=self.pad)
 
@@ -164,10 +163,12 @@ class RootWindow(tk.Frame):
         self.calWindow.withdraw()
 
     def setInitialDate(self):
+        self.calWindow.title("Set Inital Date")
         self.calWindow.deiconify()
         self.calWindow.bind('<Button-1>', self.closeInitialCal)
 
     def setFinalDate(self):
+        self.calWindow.title("Set Final Date")
         self.calWindow.deiconify()
         self.calWindow.bind('<Button-1>', self.closeFinalCal)
 
@@ -240,8 +241,12 @@ class RootWindow(tk.Frame):
         for b in buttons:
             if b == i:
                 self.attributes[i]['button'].config(bg='red')
+                self.attributes[i]['marker'].delete()
+                self.attributes[i]['marker'] = self.map_widget.set_marker(self.attributes[i]['lat'], self.attributes[i]['long'], marker_color_circle = 'dark red', marker_color_outside = 'red', command=partial(self.disengagmentFocus, i),)
             else:
                 self.attributes[b]['button'].config(bg='white')
+                self.attributes[b]['marker'].delete()
+                self.attributes[b]['marker'] = self.map_widget.set_marker(self.attributes[b]['lat'], self.attributes[b]['long'], marker_color_circle = 'dark green', marker_color_outside = 'green', command=partial(self.disengagmentFocus, b),)
 
     def displayGif(self, i):
         self.clearWidgets(self.gifWindow, 'destroy')
@@ -299,7 +304,7 @@ class RootWindow(tk.Frame):
             radio1 = tk.Radiobutton(self.userInputFrame, text='Highway', value='Highway', variable=road_type)
             radio2 = tk.Radiobutton(self.userInputFrame, text='Street', value='Street', variable=road_type)
 
-            marker = self.map_widget.set_marker(lat, long, command=partial(self.disengagmentFocus, i))
+            marker = self.map_widget.set_marker(lat, long, marker_color_circle = 'dark green', marker_color_outside = 'green', command=partial(self.disengagmentFocus, i),)
 
             reportButton = tk.Button(self.reportButtonFrame, text=title, command=partial(self.disengagmentFocus, i, None))
             reportButton.pack(fill='both', padx=self.pad, pady=self.pad) 
@@ -354,8 +359,7 @@ class RootWindow(tk.Frame):
                             row[self.roadIndex] = attrib['road_type'].get()
                             description = attrib['descBox'].get("1.0", tk.END) 
                             description = description.replace('\n', '')
-                            row[self.descIndex] = description
-                                                          
+                            row[self.descIndex] = description                           
                             break
 
             writer.writerows(reports)

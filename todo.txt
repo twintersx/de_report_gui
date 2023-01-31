@@ -9,6 +9,7 @@ DONE: when you click a coord, zoom and show that color only
 
 found bug when selecting date from 2022 to 2023
 found bug when switching log buttons after zooming in/out on map
+found bug when reclicking an already selected marker
 
 on date change or window close, run save function !
 
@@ -20,4 +21,7 @@ play toplevel cal window in correct postions
 DONE: fix bug not allowing you to click on map marker to trigger events
 DONE: load needs to clear video
 
-not able to read and write at the same time??
+DONE: add color to non selected colors
+
+removing reports and resaving does not do anything. probably doesn't read and process radio buttons or new text
+    change button load to reload and reopen csv to and place data in correct fields
