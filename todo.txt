@@ -5,16 +5,18 @@ DONE: Create calendar dropdown with date range to select
 
 DONE: set date range with two buttons 
     olderst date (button) to newest date(button)
-when you click a coord, zoom and show that color only
+DONE: when you click a coord, zoom and show that color only
 
 found bug when selecting date from 2022 to 2023
-add recording button when pressed so it doesnt look hanging
+found bug when switching log buttons after zooming in/out on map
 
 on date change or window close, run save function !
 
 add functionality for GPS receive 
-get .gif running video
+DONE: get .gif running video
 
 play toplevel cal window in correct postions
 
 start only one thread for playing gifs and feed it imagess
+
+fix bug not allowing you to click on map marker to trigger events

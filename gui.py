@@ -266,12 +266,12 @@ class RootWindow(tk.Frame):
             self.gifFrame.config(image=next(self.frames))
             self.gifFrame.after(self.delay, self.next_frame)
 
-    def disengagmentFocus(self, i, lat, long, zoom, recFile, descBox, textOnButton):
+    def disengagmentFocus(self, i, lat, long, zoom, recFile, descBox, title, marker):
         self.changeMapPosition(lat, long, zoom)
         self.initInputWidgets(descBox)
         self.highlightButton(self.buttons[i])
         self.clickMarker(self.markers[i])
-        self.displayGif(recFile, textOnButton)
+        self.displayGif(recFile, title)
 
     def initReportButtons(self):
         self.clearWidgets(self.reportButtonFrame, 'destroy') 
@@ -285,14 +285,14 @@ class RootWindow(tk.Frame):
             recFile = row[self.recFileIndex]
             recDateObj = datetime.strptime(recFile.split('.')[0], '%m%d%Y_%H%M%S')
             formatRecDate = datetime.strftime(recDateObj, '%m/%d/%Y %H:%M:%S')
-            textOnButton = f"{str(formatRecDate)} \n({lat}, {long})"
+            title = f"{str(formatRecDate)} \n({lat}, {long})"
               
             descBox = tk.Text(self.userInputFrame, width=5, height=5) 
 
-            marker = self.map_widget.set_marker(lat, long, command=partial(self.disengagmentFocus, i, lat, long, 15, recFile, descBox, textOnButton))
+            marker = self.map_widget.set_marker(lat, long, command=partial(self.disengagmentFocus, i, lat, long, 15, recFile, descBox, title))
             self.markers.append(marker)
 
-            reportButton = tk.Button(self.reportButtonFrame, text=textOnButton, command=partial(self.disengagmentFocus, i, lat, long, 15, recFile, descBox, textOnButton))
+            reportButton = tk.Button(self.reportButtonFrame, text=title, command=partial(self.disengagmentFocus,i, lat, long, 15, recFile, descBox, title, None))
             reportButton.pack(fill='both', padx=self.pad, pady=self.pad) 
             self.buttons.append(reportButton)
 
@@ -313,8 +313,12 @@ class RootWindow(tk.Frame):
         self.radioButton = tk.Radiobutton(self.userInputFrame, text='Highway', value='Highway').pack(side=tk.RIGHT)
         self.radioButton = tk.Radiobutton(self.userInputFrame, text='Street', value='Street').pack(side=tk.RIGHT)
 
+    def saveUserInputs(self):
+        pass
+
+
     def initSave(self):
-        tk.Button(self.saveFrame, text='SAVE').pack(fill=tk.X)
+        tk.Button(self.saveFrame, text='SAVE', command=self.saveUserInputs).pack(fill=tk.X)
         self.saveText = tk.Text(self.saveFrame, width=5, height=5)
         self.saveText.pack(fill=tk.X)
         self.saveText.insert('1.0', "A log of the last save will be shown here") #1.0 line 1 char 0
