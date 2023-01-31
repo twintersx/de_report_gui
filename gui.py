@@ -341,17 +341,24 @@ class RootWindow(tk.Frame):
         self.attributes[i]['radio2'].pack(side=tk.RIGHT)
 
     def saveUserInputs(self):
-        with open('reports.csv', 'rb') as csvfile:
-            reader = list(csv.reader(csvfile, delimiter=','))
-            writer = csv.writer(csvfile)
+        with open('reports.csv', newline='') as csvfile:
+            reports = list(csv.reader(csvfile, delimiter=','))
 
-        for row in reader:
-            if not row[self.descIndex] or not row[self.descIndex]:
-                for attrib in self.attributes:
-                    if attrib['gifFile'] == row[self.recFileIndex]:
-                        row[self.roadIndex] = attrib['road_type'].get()
-                        row[self.descIndex] = attrib['descBox'].get()
-                        writer.writerow(row)
+        with open('reports.csv', 'w', newline='') as csvfile:
+            writer = csv.writer(csvfile) 
+
+            for row in reports:   # skip headers (Add...)
+                if row[self.descIndex] == '' or row[self.descIndex] == '':      # if cell empty
+                    for attrib in self.attributes:                       
+                        if attrib['gifFile'] == row[self.recFileIndex]:     # check gif image at index matches uploaded gif
+                            row[self.roadIndex] = attrib['road_type'].get()
+                            description = attrib['descBox'].get("1.0", tk.END) 
+                            description = description.replace('\n', '')
+                            row[self.descIndex] = description
+                                                          
+                            break
+
+            writer.writerows(reports)
 
     def initSave(self):
         tk.Button(self.saveFrame, text='SAVE', command=self.saveUserInputs).pack(fill=tk.X)
