@@ -77,6 +77,8 @@ class RootWindow(tk.Frame):
 
         self.calWindow = tk.Toplevel()
         self.calWindow.withdraw()
+        self.calWindow.resizable(False, False)
+        
 
         self.controlFrame = tk.Frame(self.parent)
         self.controlFrame.pack(fill='both', side=tk.LEFT, padx=self.pad, pady=self.pad)
@@ -99,6 +101,7 @@ class RootWindow(tk.Frame):
         self.gifWindow = tk.Toplevel()
         self.gifWindow.withdraw()
         self.gifWindow.attributes('-topmost',True)
+        self.gifWindow.resizable(False, False)
 
     def initMapWidget(self):
         self.map_widget = TkinterMapView(self.mapFrame, width=1000, height=1000)
@@ -203,9 +206,9 @@ class RootWindow(tk.Frame):
                 if self.initialDate.day <= report_date.day <= self.finalDate.day:
                     self.report.append(row)
 
-    def changeMapPosition(self, lat, long, zoom):
-        self.map_widget.set_position(lat, long)
-        self.map_widget.set_zoom(zoom)
+    def changeMapPosition(self, i):
+        self.map_widget.set_position(self.attributes[i]['lat'], self.attributes[i]['lat'])
+        self.map_widget.set_zoom(self.attributes[i]['zoom'])
         self.map_widget.pack(fill='both')
     
     def initMapPosition(self):
@@ -222,26 +225,29 @@ class RootWindow(tk.Frame):
         elif len(self.report) == 0:
             lat, long = 37.376774, -121.989967
 
-        self.changeMapPosition(lat, long, 12)
+        self.map_widget.set_position(lat, long)
+        self.map_widget.set_zoom(12)
+        self.map_widget.pack(fill='both')
 
-    def clickMarker(self, marker):
-        if marker.image_hidden is True:
-            marker.hide_image(False)
+    def clickMarker(self, i):
+        if self.attributes[i]['marker'].image_hidden is True:
+            self.attributes[i]['marker'].hide_image(False)
         else:
-            marker.hide_image(True)
+            self.attributes[i]['marker'].hide_image(True)
 
-    def highlightButton(self, reportButton):
-        for button in self.buttons:
-            if button == reportButton:
-                reportButton.config(bg='red')
+    def highlightButton(self, i):
+        buttons = [range(0, len(self.attributes))]
+        for b in buttons:
+            if b == i:
+                self.attributes[i]['button'].config(bg='red')
             else:
-                button.config(bg='white')
+                self.attributes[b]['button'].config(bg='white')
 
-    def displayGif(self, recFile, textOnButton):
+    def displayGif(self, i):
         self.clearWidgets(self.gifWindow, 'destroy')
-        self.gifWindow.title(textOnButton)
+        self.gifWindow.title(self.attributes[i]['title'])
 
-        gifPath = os.path.join(os.getcwd(), 'recordings', recFile)
+        gifPath = os.path.join(os.getcwd(), 'recordings', self.attributes[i]['gifFile'])
         self.gifFrame = tk.Label(self.gifWindow)
         self.gifFrame.pack()
 
@@ -266,35 +272,52 @@ class RootWindow(tk.Frame):
             self.gifFrame.config(image=next(self.frames))
             self.gifFrame.after(self.delay, self.next_frame)
 
-    def disengagmentFocus(self, i, lat, long, zoom, recFile, descBox, title, marker):
-        self.changeMapPosition(lat, long, zoom)
-        self.initInputWidgets(descBox)
-        self.highlightButton(self.buttons[i])
-        self.clickMarker(self.markers[i])
-        self.displayGif(recFile, title)
+    def disengagmentFocus(self, i, marker):
+        self.changeMapPosition(i)
+        self.initInputWidgets(i)
+        self.highlightButton(i)
+        self.clickMarker(i)
+        self.displayGif(i)
 
     def initReportButtons(self):
         self.clearWidgets(self.reportButtonFrame, 'destroy') 
         self.clearWidgets(self.userInputFrame, 'destroy')
         self.map_widget.delete_all_marker()   
-        self.buttons = []
-        self.markers = []
+        self.attributes = []
         for i, row in enumerate(self.report):
             lat, long = float(row[self.latIndex]), float(row[self.longIndex])
 
-            recFile = row[self.recFileIndex]
-            recDateObj = datetime.strptime(recFile.split('.')[0], '%m%d%Y_%H%M%S')
+            gifFile = row[self.recFileIndex]
+            recDateObj = datetime.strptime(gifFile.split('.')[0], '%m%d%Y_%H%M%S')
             formatRecDate = datetime.strftime(recDateObj, '%m/%d/%Y %H:%M:%S')
             title = f"{str(formatRecDate)} \n({lat}, {long})"
               
             descBox = tk.Text(self.userInputFrame, width=5, height=5) 
+            road_type = tk.StringVar()
+            radio1 = tk.Radiobutton(self.userInputFrame, text='Highway', value='Highway', variable=road_type)
+            radio2 = tk.Radiobutton(self.userInputFrame, text='Street', value='Street', variable=road_type)
 
-            marker = self.map_widget.set_marker(lat, long, command=partial(self.disengagmentFocus, i, lat, long, 15, recFile, descBox, title))
-            self.markers.append(marker)
+            marker = self.map_widget.set_marker(lat, long, command=partial(self.disengagmentFocus, i))
 
-            reportButton = tk.Button(self.reportButtonFrame, text=title, command=partial(self.disengagmentFocus,i, lat, long, 15, recFile, descBox, title, None))
+            reportButton = tk.Button(self.reportButtonFrame, text=title, command=partial(self.disengagmentFocus, i, None))
             reportButton.pack(fill='both', padx=self.pad, pady=self.pad) 
-            self.buttons.append(reportButton)
+
+            attrib_dict = {
+                'i': i,
+                'button': reportButton,
+                'marker': marker,
+                'lat': lat,
+                'long': long,
+                'zoom': 15,
+                'gifFile': gifFile,
+                'descBox': descBox,
+                'title': title,
+                'road_type': road_type,
+                'radio1': radio1,
+                'radio2': radio2
+            }
+
+            self.attributes.append(attrib_dict)
 
     def clearWidgets(self, frame, action):
         widgets = frame.winfo_children()
@@ -304,18 +327,29 @@ class RootWindow(tk.Frame):
             elif action == 'hide':
                 w.pack_forget()
 
-    def initInputWidgets(self, descBox):
-        self.clearWidgets(self.userInputFrame, 'hide')  #all widgets are being removed so when pack is called, it is removing the box and not attached
+    def initInputWidgets(self, i):
+        self.clearWidgets(self.userInputFrame, 'hide') 
+
         tk.Label(self.userInputFrame, text="DESCRIPTION OF REASON FOR DISENGAGMENT").pack()
-        descBox.config(highlightthickness=3, highlightbackground = "red", highlightcolor='red')
-        descBox.pack(fill=tk.X)
+        self.attributes[i]['descBox'].config(highlightthickness=3, highlightbackground = "red", highlightcolor='red')
+        self.attributes[i]['descBox'].pack(fill=tk.X)
+
         tk.Label(self.userInputFrame, text="SELECT ROAD TYPE: ").pack(side=tk.LEFT)
-        self.radioButton = tk.Radiobutton(self.userInputFrame, text='Highway', value='Highway').pack(side=tk.RIGHT)
-        self.radioButton = tk.Radiobutton(self.userInputFrame, text='Street', value='Street').pack(side=tk.RIGHT)
+        self.attributes[i]['radio1'].pack(side=tk.RIGHT)
+        self.attributes[i]['radio2'].pack(side=tk.RIGHT)
 
     def saveUserInputs(self):
-        pass
+        with open('reports.csv', 'rb', newline='') as csvfile:
+            reader = list(csv.reader(csvfile, delimiter=','))
+            writer = csv.writer(csvfile)
 
+        for row in reader:
+            if not row[self.descIndex] or not row[self.descIndex]:
+                for attrib in self.attributes:
+                    if attrib['gifFile'] == row[self.recFileIndex]:
+                        row[self.roadIndex] = attrib['road_type'].get()
+                        row[self.descIndex] = attrib['descBox'].get()
+                        writer.writerow(row)
 
     def initSave(self):
         tk.Button(self.saveFrame, text='SAVE', command=self.saveUserInputs).pack(fill=tk.X)
@@ -327,5 +361,7 @@ class RootWindow(tk.Frame):
 if __name__ == "__main__":
     LiveStream().stream_start
     root = tk.Tk()
+    root.resizable(False, False)
+    root.title('Disengagment GUI 2.0')
     RootWindow(root).pack(side='top', fill='both', expand=True)
     root.mainloop()
