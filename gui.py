@@ -1,13 +1,13 @@
 import tkinter as tk
+from tkinter import messagebox
 from tkinter import font as tkFont  # for convenience
 from tkcalendar import Calendar # pip install tkcalendar
 from datetime import datetime, date, timedelta
 from tkintermapview import TkinterMapView  # pip install tkintermapview
-import csv
+import csv, os
 from functools import partial
 import cv2, imageio
 from PIL import ImageTk, Image  # pip install pillow
-import os
 import threading
 from time import sleep
 from itertools import count, cycle
@@ -74,10 +74,6 @@ class RootWindow(tk.Frame):
     def initFrames(self):   
         self.mapFrame = tk.Frame(self.parent)
         self.mapFrame.pack(side=tk.RIGHT, fill='both', padx=self.pad, pady=self.pad)
-
-        self.calWindow = tk.Toplevel()
-        self.calWindow.withdraw()
-        self.calWindow.resizable(False, False)
         
         self.controlFrame = tk.Frame(self.parent)
         self.controlFrame.pack(fill='both', side=tk.LEFT, padx=self.pad, pady=self.pad)
@@ -97,7 +93,17 @@ class RootWindow(tk.Frame):
         self.saveFrame = tk.Frame(self.controlFrame)
         self.saveFrame.pack(fill=tk.X, side=tk.BOTTOM, padx=self.pad, pady=self.pad)
 
+        # --- Top Level Window Initialization --- #
+        x = self.parent.winfo_x()
+        y = self.parent.winfo_y()
+
+        self.calWindow = tk.Toplevel()
+        self.calWindow.withdraw()
+        self.calWindow.resizable(False, False)
+        self.calWindow.geometry("+%d+%d" % (x + 0, y + 110))
+
         self.gifWindow = tk.Toplevel()
+        self.gifWindow.geometry("+%d+%d" % (x + 600, y + 0))
         self.gifWindow.withdraw()
         self.gifWindow.attributes('-topmost',True)
         self.gifWindow.resizable(False, False)
@@ -188,14 +194,15 @@ class RootWindow(tk.Frame):
         self.finalDateButton = tk.Button(self.calFrame, text=f"{today.strftime('%m/%d/%Y')}", command=self.setFinalDate)
         self.finalDateButton.pack(fill='both', side=tk.LEFT) 
 
-        self.loadButton = tk.Button(self.loadFrame, text="LOAD", command=self.onDateChangeClick)
+        self.loadButton = tk.Button(self.loadFrame, text="RELOAD", command=self.onReloadClick)
         self.loadButton.pack(fill=tk.X, side=tk.BOTTOM) 
 # ---------- END CALENDAR ---------- #
     
 # ---------- BUTTON FUNCTIONALITY ---------- #
-    def onDateChangeClick(self):
+    def onReloadClick(self):
         self.setDateReport()
         self.initMapPosition()
+        self.saveUserInputs()
         self.initReportButtons()
 
     def setDateReport(self):
@@ -204,7 +211,7 @@ class RootWindow(tk.Frame):
             reader = list(csv.reader(csvfile, delimiter=','))
             for row in reader[1:]:
                 report_date = datetime.strptime(row[self.dateIndex], '%m/%d/%Y')
-                if self.initialDate.day <= report_date.day <= self.finalDate.day:
+                if self.initialDate <= report_date <= self.finalDate:
                     self.report.append(row)
 
     def changeMapPosition(self, i):
@@ -242,11 +249,22 @@ class RootWindow(tk.Frame):
             if b == i:
                 self.attributes[i]['button'].config(bg='red')
                 self.attributes[i]['marker'].delete()
-                self.attributes[i]['marker'] = self.map_widget.set_marker(self.attributes[i]['lat'], self.attributes[i]['long'], marker_color_circle = 'dark red', marker_color_outside = 'red', command=partial(self.disengagmentFocus, i),)
+                self.attributes[i]['marker'] = self.map_widget.set_marker(
+                    self.attributes[i]['lat'], 
+                    self.attributes[i]['long'], 
+                    marker_color_circle = 'dark red', 
+                    marker_color_outside = 'red', 
+                    command=partial(self.disengagmentFocus, i))
+
             else:
                 self.attributes[b]['button'].config(bg='white')
                 self.attributes[b]['marker'].delete()
-                self.attributes[b]['marker'] = self.map_widget.set_marker(self.attributes[b]['lat'], self.attributes[b]['long'], marker_color_circle = 'dark green', marker_color_outside = 'green', command=partial(self.disengagmentFocus, b),)
+                self.attributes[b]['marker'] = self.map_widget.set_marker(
+                    self.attributes[b]['lat'], 
+                    self.attributes[b]['long'], 
+                    marker_color_circle = 'dark green', 
+                    marker_color_outside = 'green', 
+                    command=partial(self.disengagmentFocus, b))
 
     def displayGif(self, i):
         self.clearWidgets(self.gifWindow, 'destroy')
@@ -288,7 +306,10 @@ class RootWindow(tk.Frame):
         self.clearWidgets(self.reportButtonFrame, 'destroy') 
         self.clearWidgets(self.userInputFrame, 'destroy')
         self.gifWindow.withdraw()
-        self.map_widget.delete_all_marker()   
+        self.map_widget.delete_all_marker()  
+
+        """helv10 = tkFont.Font(family='Helvetica', size=10, weight='bold')
+        tk.Label(self.userInputFrame, text="DISENGAGMENT LIST", font=helv10).pack()"""
 
         self.attributes = []
         for i, row in enumerate(self.report):
@@ -300,7 +321,8 @@ class RootWindow(tk.Frame):
             title = f"{str(formatRecDate)} \n({lat}, {long})"
               
             descBox = tk.Text(self.userInputFrame, width=5, height=5) 
-            road_type = tk.StringVar()
+            descBox.insert('1.0', row[self.descIndex])
+            road_type = tk.StringVar(value=row[self.roadIndex])
             radio1 = tk.Radiobutton(self.userInputFrame, text='Highway', value='Highway', variable=road_type)
             radio2 = tk.Radiobutton(self.userInputFrame, text='Street', value='Street', variable=road_type)
 
@@ -353,28 +375,42 @@ class RootWindow(tk.Frame):
             writer = csv.writer(csvfile) 
 
             for row in reports:   # skip headers (Add...)
-                if row[self.descIndex] == '' or row[self.descIndex] == '':      # if cell empty
-                    for attrib in self.attributes:                       
-                        if attrib['gifFile'] == row[self.recFileIndex]:     # check gif image at index matches uploaded gif
-                            row[self.roadIndex] = attrib['road_type'].get()
-                            description = attrib['descBox'].get("1.0", tk.END) 
-                            description = description.replace('\n', '')
-                            row[self.descIndex] = description                           
-                            break
+                for attrib in self.attributes:                       
+                    if attrib['gifFile'] == row[self.recFileIndex]:     # check gif image at index matches uploaded gif
+                        row[self.roadIndex] = attrib['road_type'].get()
+                        description = attrib['descBox'].get("1.0", tk.END) 
+                        description = description.replace('\n', '')
+                        row[self.descIndex] = description                           
+                        break
 
             writer.writerows(reports)
+
+        self.saveText.insert('1.0', f"SAVED: {datetime.now().strftime('%H:%M:%S') }\n") #1.0 line 1 char 0
 
     def initSave(self):
         tk.Button(self.saveFrame, text='SAVE', command=self.saveUserInputs).pack(fill=tk.X)
         self.saveText = tk.Text(self.saveFrame, width=5, height=5)
         self.saveText.pack(fill=tk.X)
-        self.saveText.insert('1.0', "A log of the last save will be shown here") #1.0 line 1 char 0
+
+    def onUserClose(self): 
+        self.saveUserInputs()
+        if messagebox.askokcancel('Disengagment GUI 2.0', "Your work has auto-saved!\nAre you sure you want to quit?"):
+            self.parent.destroy()
+
 # ---------- END BUTTON FUNCTIONALITY ---------- #
-    
-if __name__ == "__main__":
-    LiveStream().stream_start
+
+def main():
     root = tk.Tk()
     root.resizable(False, False)
     root.title('Disengagment GUI 2.0')
-    RootWindow(root).pack(side='top', fill='both', expand=True)
+
+    rw = RootWindow(root)
+    rw.pack(side='top', fill='both', expand=True)
+    root.protocol("WM_DELETE_WINDOW", rw.onUserClose)
+
+    LiveStream().stream_start
+
     root.mainloop()
+
+if __name__ == "__main__":
+    main()

@@ -2,26 +2,17 @@ DONE: Switch to pyqt5
 DONE: default opens program on current date
 DONE: add radiobutton for street or highway
 DONE: Create calendar dropdown with date range to select
-
-DONE: set date range with two buttons 
-    olderst date (button) to newest date(button)
+DONE: set date range with two buttons, olderst date (button) to newest date(button)
 DONE: when you click a coord, zoom and show that color only
-
-found bug when selecting date from 2022 to 2023
-found bug when switching log buttons after zooming in/out on map
-found bug when reclicking an already selected marker
-
-on date change or window close, run save function !
-
-add functionality for GPS receive 
 DONE: get .gif running video
-
-play toplevel cal window in correct postions
-
+DONE: play toplevel cal window in correct postions
 DONE: fix bug not allowing you to click on map marker to trigger events
 DONE: load needs to clear video
-
 DONE: add color to non selected colors
+DONE: change button load to reload and reopen csv to and place data in correct fields
+DONE: does not update first edited report button press
+DONE: found bug when selecting date from 2022 to 2023 - removed day and compared actual dates
+DONE: on date change or window close, run save function !
 
-removing reports and resaving does not do anything. probably doesn't read and process radio buttons or new text
-    change button load to reload and reopen csv to and place data in correct fields
+found bug when reclicking already selected log button after zooming in/out on map
+add functionality for GPS receive 
