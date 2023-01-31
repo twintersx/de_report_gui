@@ -17,6 +17,7 @@ DONE: get .gif running video
 
 play toplevel cal window in correct postions
 
-start only one thread for playing gifs and feed it imagess
+DONE: fix bug not allowing you to click on map marker to trigger events
+DONE: load needs to clear video
 
-fix bug not allowing you to click on map marker to trigger events
+not able to read and write at the same time??

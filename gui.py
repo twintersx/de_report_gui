@@ -207,7 +207,7 @@ class RootWindow(tk.Frame):
                     self.report.append(row)
 
     def changeMapPosition(self, i):
-        self.map_widget.set_position(self.attributes[i]['lat'], self.attributes[i]['lat'])
+        self.map_widget.set_position(self.attributes[i]['lat'], self.attributes[i]['long'])
         self.map_widget.set_zoom(self.attributes[i]['zoom'])
         self.map_widget.pack(fill='both')
     
@@ -236,7 +236,7 @@ class RootWindow(tk.Frame):
             self.attributes[i]['marker'].hide_image(True)
 
     def highlightButton(self, i):
-        buttons = [range(0, len(self.attributes))]
+        buttons = [*range(0, len(self.attributes))]
         for b in buttons:
             if b == i:
                 self.attributes[i]['button'].config(bg='red')
@@ -282,7 +282,9 @@ class RootWindow(tk.Frame):
     def initReportButtons(self):
         self.clearWidgets(self.reportButtonFrame, 'destroy') 
         self.clearWidgets(self.userInputFrame, 'destroy')
+        self.gifWindow.withdraw()
         self.map_widget.delete_all_marker()   
+
         self.attributes = []
         for i, row in enumerate(self.report):
             lat, long = float(row[self.latIndex]), float(row[self.longIndex])
@@ -339,7 +341,7 @@ class RootWindow(tk.Frame):
         self.attributes[i]['radio2'].pack(side=tk.RIGHT)
 
     def saveUserInputs(self):
-        with open('reports.csv', 'rb', newline='') as csvfile:
+        with open('reports.csv', 'rb') as csvfile:
             reader = list(csv.reader(csvfile, delimiter=','))
             writer = csv.writer(csvfile)
 
