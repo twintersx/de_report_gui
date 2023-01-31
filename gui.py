@@ -103,7 +103,7 @@ class RootWindow(tk.Frame):
         self.calWindow.geometry("+%d+%d" % (x + 0, y + 110))
 
         self.gifWindow = tk.Toplevel()
-        self.gifWindow.geometry("+%d+%d" % (x + 600, y + 0))
+        self.gifWindow.geometry("+%d+%d" % (x + 550, y + 0))
         self.gifWindow.withdraw()
         self.gifWindow.attributes('-topmost',True)
         self.gifWindow.resizable(False, False)
@@ -308,8 +308,8 @@ class RootWindow(tk.Frame):
         self.gifWindow.withdraw()
         self.map_widget.delete_all_marker()  
 
-        """helv10 = tkFont.Font(family='Helvetica', size=10, weight='bold')
-        tk.Label(self.userInputFrame, text="DISENGAGMENT LIST", font=helv10).pack()"""
+        helv10 = tkFont.Font(family='Helvetica', size=15, weight='bold')
+        tk.Label(self.reportButtonFrame, text="DISENGAGMENT LIST", font=helv10).pack(pady=(20, 0))
 
         self.attributes = []
         for i, row in enumerate(self.report):
