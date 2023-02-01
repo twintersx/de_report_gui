@@ -18,11 +18,15 @@ DONE: change cal and gif windows to pop up relative to roots current location, n
 DONE: when we enter end drive, stop stream thread
 
 add functionality for GPS receive 
-
+add quit button and full screen gui, make widets fill all
 streamFrame should delete every some odd time....
+possible to change map tile to google?
 
 Bugs:
-found bug when reclicking already selected log button after zooming in/out on map
+bug should be fixed by changed zoom in tkintermapview type from int to float
+
+
+
 
 
 

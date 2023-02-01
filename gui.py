@@ -1,10 +1,10 @@
+import csv, os
 import tkinter as tk
 from tkinter import messagebox
-from tkinter import font as tkFont  # for convenience
+from tkinter import font as tkFont
 from tkcalendar import Calendar # pip install tkcalendar
 from datetime import datetime, date, timedelta
 from tkintermapview import TkinterMapView  # pip install tkintermapview
-import csv, os
 from functools import partial
 import cv2, imageio
 from PIL import ImageTk, Image  # pip install pillow
@@ -65,12 +65,12 @@ class RootWindow(tk.Frame):
         self.logFrame.pack(fill='both')
         
         helv36 = tkFont.Font(family='Helvetica', size=36, weight='bold')
-        self.logButton = tk.Button(self.logFrame, height=10, width=20, text="RECORD\nDISENGAGMENT", command=self.logDEvent, bg='green', font=helv36)    #
-        self.logButton.pack(side=tk.TOP, fill='both', padx=self.pad, pady=self.pad)
+        self.logButton = tk.Button(self.logFrame, height=10, width=20, text="RECORD\nDISENGAGMENT", command=self.logDEvent, bg='green', font=helv36) 
+        self.logButton.pack(fill='both', padx=self.pad, pady=self.pad)
 
         helv10 = tkFont.Font(family='Helvetica', size=20, weight='bold')
         endDriveButton = tk.Button(self.logFrame, text="END DRIVE", command=self.initReportGUI, bg='red', font=helv10)
-        endDriveButton.pack(side=tk.BOTTOM, fill='both', padx=self.pad, pady=self.pad)
+        endDriveButton.pack(fill='both', padx=self.pad, pady=self.pad)
 
     def initReportGUI(self):
         event.set()
@@ -236,9 +236,11 @@ class RootWindow(tk.Frame):
                     self.report.append(row)
 
     def changeMapPosition(self, i):
-        self.map_widget.set_position(self.attributes[i]['lat'], self.attributes[i]['long'])
+        print(self.map_widget.zoom)
+        self.map_widget.set_position(
+            self.attributes[i]['lat'], 
+            self.attributes[i]['long'])
         self.map_widget.set_zoom(self.attributes[i]['zoom'])
-        self.map_widget.pack(fill='both')
     
     def initMapPosition(self):
         # at least one report
@@ -413,6 +415,7 @@ class RootWindow(tk.Frame):
         tk.Button(self.saveFrame, text='SAVE', command=self.saveUserInputs).pack(fill=tk.X)
         self.saveText = tk.Text(self.saveFrame, width=5, height=5)
         self.saveText.pack(fill=tk.X)
+        tk.Button(self.saveFrame, text='EXIT GUI', command=self.onUserClose).pack(fill=tk.X)
 
     def onUserClose(self): 
         self.saveUserInputs()
@@ -425,6 +428,7 @@ def main():
     root = tk.Tk()
     root.resizable(False, False)
     root.title('Disengagment GUI 2.0')
+    #root.attributes('-fullscreen', True)
 
     rw = RootWindow(root)
     rw.pack(side='top', fill='both', expand=True)
