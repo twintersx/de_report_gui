@@ -16,3 +16,17 @@ DONE: on date change or window close, run save function !
 
 found bug when reclicking already selected log button after zooming in/out on map
 add functionality for GPS receive 
+
+
+
+
+
+Notes:
+rostopic echo /GPSDiag
+Look for Longitude: and Latitude: 
+
+rostopic echo /driver_input
+will show steering angle, brake or accel pedal being pressed
+
+rostopic echo /accel_state
+shows linear/angular acceleration values. Disengagment occurs here?
