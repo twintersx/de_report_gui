@@ -13,9 +13,13 @@ DONE: change button load to reload and reopen csv to and place data in correct f
 DONE: does not update first edited report button press
 DONE: found bug when selecting date from 2022 to 2023 - removed day and compared actual dates
 DONE: on date change or window close, run save function !
+DONE: change calendar to if date change not on click and fix exit window
 
-found bug when reclicking already selected log button after zooming in/out on map
+
 add functionality for GPS receive 
+
+Bugs:
+found bug when reclicking already selected log button after zooming in/out on map
 
 
 
@@ -30,3 +34,8 @@ will show steering angle, brake or accel pedal being pressed
 
 rostopic echo /accel_state
 shows linear/angular acceleration values. Disengagment occurs here?
+
+https://www.pythonguis.com/tutorials/packaging-tkinter-applications-windows-pyinstaller/
+to create from scratch: pyinstaller --windowed --add-data="reports.csv;." gui.py
+go into .spec and add recordings folder by replacing ('reports.csv', '.') with ('reports.csv', '.'), ('recordings', 'recordings')
+run pyinstaller app_name.spec (gui.spec) == pyinstaller gui.spec

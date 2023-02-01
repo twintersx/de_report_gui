@@ -98,14 +98,17 @@ class RootWindow(tk.Frame):
         y = self.parent.winfo_y()
 
         self.calWindow = tk.Toplevel()
+        self.calWindow.protocol("WM_DELETE_WINDOW", self.calWindow.withdraw)
+        self.calWindow.attributes('-topmost', True)
         self.calWindow.withdraw()
         self.calWindow.resizable(False, False)
         self.calWindow.geometry("+%d+%d" % (x + 0, y + 110))
 
         self.gifWindow = tk.Toplevel()
+        self.gifWindow.protocol("WM_DELETE_WINDOW", self.gifWindow.withdraw)
         self.gifWindow.geometry("+%d+%d" % (x + 550, y + 0))
         self.gifWindow.withdraw()
-        self.gifWindow.attributes('-topmost',True)
+        self.gifWindow.attributes('-topmost', True)
         self.gifWindow.resizable(False, False)
 
     def initMapWidget(self):
@@ -159,23 +162,27 @@ class RootWindow(tk.Frame):
     
 # ---------- CALENDAR ---------- #
     def closeInitialCal(self, event):
-        self.initialDate = datetime.strptime(self.cal.get_date(), '%m/%d/%y')
-        self.initalDateButton.config(text=self.initialDate.strftime('%m/%d/%Y'))
-        self.calWindow.withdraw()
+        if self.cal.get_date() != self.initDate:
+            self.initialDate = datetime.strptime(self.cal.get_date(), '%m/%d/%y')
+            self.initalDateButton.config(text=self.initialDate.strftime('%m/%d/%Y'))
+            self.calWindow.withdraw()
 
     def closeFinalCal(self, event):
-        self.finalDate = datetime.strptime(self.cal.get_date(), '%m/%d/%y')
-        self.finalDateButton.config(text=self.finalDate.strftime('%m/%d/%Y'))
-        self.calWindow.withdraw()
+        if self.cal.get_date() != self.initDate:
+            self.finalDate = datetime.strptime(self.cal.get_date(), '%m/%d/%y')
+            self.finalDateButton.config(text=self.finalDate.strftime('%m/%d/%Y'))
+            self.calWindow.withdraw()
 
     def setInitialDate(self):
         self.calWindow.title("Set Inital Date")
         self.calWindow.deiconify()
+        self.initDate = self.cal.get_date()
         self.calWindow.bind('<Button-1>', self.closeInitialCal)
 
     def setFinalDate(self):
         self.calWindow.title("Set Final Date")
         self.calWindow.deiconify()
+        self.initDate = self.cal.get_date()
         self.calWindow.bind('<Button-1>', self.closeFinalCal)
 
     def initCalendar(self):
@@ -308,7 +315,7 @@ class RootWindow(tk.Frame):
         self.gifWindow.withdraw()
         self.map_widget.delete_all_marker()  
 
-        helv10 = tkFont.Font(family='Helvetica', size=15, weight='bold')
+        helv10 = tkFont.Font(family='Helvetica', size=12, weight='bold')
         tk.Label(self.reportButtonFrame, text="DISENGAGMENT LIST", font=helv10).pack(pady=(20, 0))
 
         self.attributes = []
