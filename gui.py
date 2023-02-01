@@ -416,7 +416,7 @@ class RootWindow(tk.Frame):
 
     def onUserClose(self): 
         self.saveUserInputs()
-        if messagebox.askokcancel('Disengagment GUI 2.0', "Your work has auto-saved!\nAre you sure you want to quit?"):
+        if messagebox.askokcancel('Disengagment GUI 2.0', "Your work has auto-saved!\nAre you sure you want to quit?", parent=self.gifWindow):
             self.parent.destroy()
 
 # ---------- END BUTTON FUNCTIONALITY ---------- #
