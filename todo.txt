@@ -14,9 +14,12 @@ DONE: does not update first edited report button press
 DONE: found bug when selecting date from 2022 to 2023 - removed day and compared actual dates
 DONE: on date change or window close, run save function !
 DONE: change calendar to if date change not on click and fix exit window
-
+DONE: change cal and gif windows to pop up relative to roots current location, not initial
+DONE: when we enter end drive, stop stream thread
 
 add functionality for GPS receive 
+
+streamFrame should delete every some odd time....
 
 Bugs:
 found bug when reclicking already selected log button after zooming in/out on map

@@ -8,16 +8,17 @@ import csv, os
 from functools import partial
 import cv2, imageio
 from PIL import ImageTk, Image  # pip install pillow
-import threading
+from threading import Lock, Thread, Event
 from time import sleep
 from itertools import count, cycle
 
 streamFrm = []
-lock = threading.Lock()
+lock = Lock()
+event = Event()
 
 class LiveStream():
     def __init__(self):
-        ts = threading.Thread(target=self.stream_start, daemon=True)
+        ts = Thread(target=self.stream_start, daemon=True)
         ts.start()
 
     def stream_start(self):
@@ -28,6 +29,16 @@ class LiveStream():
             with lock:
                 streamFrm.append((datetime.now(), frame))
             sleep(0.25)  # fps
+            
+            if len(streamFrm) > 1200:
+                streamFrm = streamFrm[1100:]
+
+            if event.is_set():
+                break
+
+        cap.release()               # Close the window / Release webcam
+        cv2.destroyAllWindows()     # De-allocate any associated memory usage
+        return
 
 class RootWindow(tk.Frame):
 # ---------- INITIALIZATION --------- #
@@ -62,6 +73,7 @@ class RootWindow(tk.Frame):
         endDriveButton.pack(side=tk.BOTTOM, fill='both', padx=self.pad, pady=self.pad)
 
     def initReportGUI(self):
+        event.set()
         self.logFrame.destroy()
         self.initFrames()
         self.initCalendar()
@@ -94,25 +106,25 @@ class RootWindow(tk.Frame):
         self.saveFrame.pack(fill=tk.X, side=tk.BOTTOM, padx=self.pad, pady=self.pad)
 
         # --- Top Level Window Initialization --- #
-        x = self.parent.winfo_x()
-        y = self.parent.winfo_y()
-
         self.calWindow = tk.Toplevel()
         self.calWindow.protocol("WM_DELETE_WINDOW", self.calWindow.withdraw)
         self.calWindow.attributes('-topmost', True)
         self.calWindow.withdraw()
         self.calWindow.resizable(False, False)
-        self.calWindow.geometry("+%d+%d" % (x + 0, y + 110))
 
         self.gifWindow = tk.Toplevel()
         self.gifWindow.protocol("WM_DELETE_WINDOW", self.gifWindow.withdraw)
-        self.gifWindow.geometry("+%d+%d" % (x + 550, y + 0))
         self.gifWindow.withdraw()
         self.gifWindow.attributes('-topmost', True)
         self.gifWindow.resizable(False, False)
 
     def initMapWidget(self):
         self.map_widget = TkinterMapView(self.mapFrame, width=1000, height=1000)
+
+    def placeWindowRelRoot(self, window, dx, dy):
+        x = self.parent.winfo_x()
+        y = self.parent.winfo_y()
+        window.geometry("+%d+%d" % (x + dx, y + dy))
 # ---------- END INITIALIZATION --------- #
 
 # ---------- RECORD WINDOW ---------- #
@@ -174,12 +186,14 @@ class RootWindow(tk.Frame):
             self.calWindow.withdraw()
 
     def setInitialDate(self):
+        self.placeWindowRelRoot(self.calWindow, 0, 110)
         self.calWindow.title("Set Inital Date")
         self.calWindow.deiconify()
         self.initDate = self.cal.get_date()
         self.calWindow.bind('<Button-1>', self.closeInitialCal)
 
     def setFinalDate(self):
+        self.placeWindowRelRoot(self.calWindow, 0, 110)
         self.calWindow.title("Set Final Date")
         self.calWindow.deiconify()
         self.initDate = self.cal.get_date()
@@ -275,6 +289,7 @@ class RootWindow(tk.Frame):
 
     def displayGif(self, i):
         self.clearWidgets(self.gifWindow, 'destroy')
+        self.placeWindowRelRoot(self.gifWindow, 550, 0)
         self.gifWindow.title(self.attributes[i]['title'])
 
         gifPath = os.path.join(os.getcwd(), 'recordings', self.attributes[i]['gifFile'])
