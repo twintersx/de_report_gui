@@ -16,20 +16,10 @@ DONE: on date change or window close, run save function !
 DONE: change calendar to if date change not on click and fix exit window
 DONE: change cal and gif windows to pop up relative to roots current location, not initial
 DONE: when we enter end drive, stop stream thread
+DONE: bug should be fixed by changed zoom in tkintermapview type from int to float
 
 add functionality for GPS receive 
-add quit button and full screen gui, make widets fill all
-streamFrame should delete every some odd time....
 possible to change map tile to google?
-
-Bugs:
-bug should be fixed by changed zoom in tkintermapview type from int to float
-
-
-
-
-
-
 
 
 Notes:

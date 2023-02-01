@@ -236,7 +236,7 @@ class RootWindow(tk.Frame):
                     self.report.append(row)
 
     def changeMapPosition(self, i):
-        print(self.map_widget.zoom)
+        self.map_widget.set_zoom(int(self.map_widget.zoom)) #required
         self.map_widget.set_position(
             self.attributes[i]['lat'], 
             self.attributes[i]['long'])
