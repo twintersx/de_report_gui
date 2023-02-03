@@ -120,7 +120,6 @@ class RootWindow(tk.Frame):
 
     def initMapWidget(self):
         self.map_widget = TkinterMapView(self.mapFrame, width=1000, height=1000)
-        self.
 
     def placeWindowRelRoot(self, window, dx, dy):
         x = self.parent.winfo_x()
