@@ -120,6 +120,7 @@ class RootWindow(tk.Frame):
 
     def initMapWidget(self):
         self.map_widget = TkinterMapView(self.mapFrame, width=1000, height=1000)
+        self.
 
     def placeWindowRelRoot(self, window, dx, dy):
         x = self.parent.winfo_x()
@@ -227,13 +228,13 @@ class RootWindow(tk.Frame):
         self.initReportButtons()
 
     def setDateReport(self):
-        self.report = []
+        self.dateRangeReports = []
         with open('reports.csv', newline='') as csvfile:
             reader = list(csv.reader(csvfile, delimiter=','))
             for row in reader[1:]:
                 report_date = datetime.strptime(row[self.dateIndex], '%m/%d/%Y')
                 if self.initialDate <= report_date <= self.finalDate:
-                    self.report.append(row)
+                    self.dateRangeReports.append(row)
 
     def changeMapPosition(self, i):
         self.map_widget.set_zoom(int(self.map_widget.zoom)) #required
@@ -244,16 +245,16 @@ class RootWindow(tk.Frame):
     
     def initMapPosition(self):
         # at least one report
-        if len(self.report) >= 1:
+        if len(self.dateRangeReports) >= 1:
             lats, longs = [], []
-            for row in self.report:
+            for row in self.dateRangeReports:
                 lats.append(float(row[self.latIndex]))
                 longs.append(float(row[self.longIndex]))
             lat = sum(lats) / len(lats)
             long = sum(longs) / len(longs)
 
         # no reports, set to lab center
-        elif len(self.report) == 0:
+        elif len(self.dateRangeReports) == 0:
             lat, long = 37.376774, -121.989967
 
         self.map_widget.set_position(lat, long)
@@ -336,7 +337,7 @@ class RootWindow(tk.Frame):
         tk.Label(self.reportButtonFrame, text="DISENGAGMENT LIST", font=helv10).pack(pady=(20, 0))
 
         self.attributes = []
-        for i, row in enumerate(self.report):
+        for i, row in enumerate(self.dateRangeReports):
             lat, long = float(row[self.latIndex]), float(row[self.longIndex])
 
             gifFile = row[self.recFileIndex]
@@ -393,21 +394,26 @@ class RootWindow(tk.Frame):
 
     def saveUserInputs(self):
         with open('reports.csv', newline='') as csvfile:
-            reports = list(csv.reader(csvfile, delimiter=','))
+            all_reports = list(csv.reader(csvfile, delimiter=','))
 
         with open('reports.csv', 'w', newline='') as csvfile:
             writer = csv.writer(csvfile) 
 
-            for row in reports:   # skip headers (Add...)
-                for attrib in self.attributes:                       
-                    if attrib['gifFile'] == row[self.recFileIndex]:     # check gif image at index matches uploaded gif
-                        row[self.roadIndex] = attrib['road_type'].get()
+            for row in all_reports:   # skip headers (Add...)
+                for i, attrib in enumerate(self.attributes):                       
+                    if attrib['gifFile'] == row[self.recFileIndex]:     # check gif image at index matches uploaded gif4
+
+                        road_type = attrib['road_type'].get()
+                        row[self.roadIndex] = road_type
+                        self.dateRangeReports[i][self.roadIndex] = road_type
+
                         description = attrib['descBox'].get("1.0", tk.END) 
+                        self.dateRangeReports[i][self.descIndex] = description
                         description = description.replace('\n', '')
                         row[self.descIndex] = description                           
                         break
 
-            writer.writerows(reports)
+            writer.writerows(all_reports)
 
         self.saveText.insert('1.0', f"SAVED: {datetime.now().strftime('%H:%M:%S') }\n") #1.0 line 1 char 0
 
