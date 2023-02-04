@@ -150,8 +150,7 @@ class RootWindow(tk.Frame):
         #ROS
         self.latitude = ''
         self.longitude = ''
-        pass
-
+        
     def writeNewCSVRow(self):
         newLog = [None] * len(self.headers)
         newLog[self.dateIndex] = self.recordTime.strftime('%m/%d/%Y')
@@ -398,18 +397,21 @@ class RootWindow(tk.Frame):
         with open('reports.csv', 'w', newline='') as csvfile:
             writer = csv.writer(csvfile) 
 
-            for row in all_reports:   # skip headers (Add...)
+            for row in all_reports[1:]:   # skip headers
                 for i, attrib in enumerate(self.attributes):                       
-                    if attrib['gifFile'] == row[self.recFileIndex]:     # check gif image at index matches uploaded gif4
+                    if attrib['gifFile'] == row[self.recFileIndex]:
 
                         road_type = attrib['road_type'].get()
                         row[self.roadIndex] = road_type
-                        self.dateRangeReports[i][self.roadIndex] = road_type
-
+                        
                         description = attrib['descBox'].get("1.0", tk.END) 
-                        self.dateRangeReports[i][self.descIndex] = description
                         description = description.replace('\n', '')
-                        row[self.descIndex] = description                           
+                        row[self.descIndex] = description    
+
+                        if i <= len(self.dateRangeReports):   
+                            self.dateRangeReports[i][self.roadIndex] = road_type     
+                            self.dateRangeReports[i][self.descIndex] = description     
+
                         break
 
             writer.writerows(all_reports)

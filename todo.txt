@@ -20,7 +20,8 @@ DONE: bug should be fixed by changed zoom in tkintermapview type from int to flo
 DONE: reload is not saving because of order of save?  fixed by adding to self.daterangerepoirts list when saving
 
 add functionality for GPS receive 
-possible to change map tile to google?
+
+error when you go from more to less disengagments after reload button
 
 
 Notes:
