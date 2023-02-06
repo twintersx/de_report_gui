@@ -18,11 +18,9 @@ DONE: change cal and gif windows to pop up relative to roots current location, n
 DONE: when we enter end drive, stop stream thread
 DONE: bug should be fixed by changed zoom in tkintermapview type from int to float
 DONE: reload is not saving because of order of save?  fixed by adding to self.daterangerepoirts list when saving
+DONE: Bug fix! error when you go from more to less disengagments after reload button
 
-add functionality for GPS receive 
-
-error when you go from more to less disengagments after reload button
-
+add functionality for GPS receive with ROS? have seperate ROS that runs on command line
 
 Notes:
 rostopic echo /GPSDiag

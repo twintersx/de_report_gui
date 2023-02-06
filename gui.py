@@ -1,7 +1,7 @@
 import csv, os
 import tkinter as tk
 from tkinter import messagebox
-from tkinter import font as tkFont
+from tkinter import font as tkFont 
 from tkcalendar import Calendar # pip install tkcalendar
 from datetime import datetime, date, timedelta
 from tkintermapview import TkinterMapView  # pip install tkintermapview
@@ -220,9 +220,9 @@ class RootWindow(tk.Frame):
     
 # ---------- BUTTON FUNCTIONALITY ---------- #
     def onReloadClick(self):
+        self.saveUserInputs()
         self.setDateReport()
         self.initMapPosition()
-        self.saveUserInputs()
         self.initReportButtons()
 
     def setDateReport(self):
@@ -408,9 +408,9 @@ class RootWindow(tk.Frame):
                         description = description.replace('\n', '')
                         row[self.descIndex] = description    
 
-                        if i <= len(self.dateRangeReports):   
+                        """if i <= len(self.dateRangeReports) - 1:   
                             self.dateRangeReports[i][self.roadIndex] = road_type     
-                            self.dateRangeReports[i][self.descIndex] = description     
+                            self.dateRangeReports[i][self.descIndex] = description  """   
 
                         break
 
