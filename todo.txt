@@ -22,8 +22,15 @@ DONE: Bug fix! error when you go from more to less disengagments after reload bu
 
 add functionality for GPS receive with ROS? have seperate ROS that runs on command line
 
+
 Notes:
-rostopic echo /GPSDiag
+created venv: https://www.freecodecamp.org/news/how-to-setup-virtual-environments-in-python/
+ran in dir python3 -m venv de_gui_env
+to activate: source de_gui_env/bin/activate -------- should see (de_gui_env) to left of directory in terminal
+
+
+
+rostopic echo /gps_state
 Look for Longitude: and Latitude: 
 
 rostopic echo /driver_input
