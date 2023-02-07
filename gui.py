@@ -133,7 +133,7 @@ class RootWindow(tk.Frame):
         global streamFrm
         self.recordTime = datetime.now()
         self.gifFileName = self.recordTime.strftime("%m%d%Y_%H%M%S") + '.gif'
-        tMinus10 = self.recordTime - timedelta(seconds=10)
+        """tMinus10 = self.recordTime - timedelta(seconds=10)
         sleep(10)
         gifFrames = []
         for data in streamFrm:
@@ -145,26 +145,35 @@ class RootWindow(tk.Frame):
                 rgb_frame = cv2.cvtColor(f, cv2.COLOR_BGR2RGB)
                 writer.append_data(rgb_frame)
             with lock:
-                streamFrm = []
+                streamFrm = []"""
 
     def captureGPS(self):
-        #ROS
-        self.latitude = ''
-        self.longitude = ''
+        #run ros lat long script in pc main
+        pass
         
     def writeNewCSVRow(self):
+        with open('reports.csv', newline='') as csvfile:
+            all_reports = list(csv.reader(csvfile, delimiter=','))
+        coordinates = all_reports[len(all_reports)-1]
+        all_reports.remove(coordinates)
+        
         newLog = [None] * len(self.headers)
         newLog[self.dateIndex] = self.recordTime.strftime('%m/%d/%Y')
         newLog[self.vinIndex] = '1N4AZ1CP7KC308251'
         newLog[self.roadIndex] = ''
-        newLog[self.latIndex] = self.latitude
-        newLog[self.longIndex] = self.longitude
+        newLog[self.latIndex] = coordinates[0]
+        newLog[self.longIndex] = coordinates[1]
         newLog[self.recFileIndex] = self.gifFileName
         newLog[self.descIndex] = ''
+        all_reports.append(newLog)
 
-        with open('reports.csv', 'a', newline='') as csvfile:
+        with open('reports.csv', 'w', newline='') as csvfile:
+            writer = csv.writer(csvfile) 
+            writer.writerows(all_reports)
+
+        """with open('reports.csv', 'a', newline='') as csvfile:
             writer = csv.writer(csvfile)
-            writer.writerow(newLog)
+            writer.writerow(newLog)"""
 
     def logDEvent(self):
         self.recordGIF()
@@ -407,11 +416,7 @@ class RootWindow(tk.Frame):
                         
                         description = attrib['descBox'].get("1.0", tk.END) 
                         description = description.replace('\n', '')
-                        row[self.descIndex] = description    
-
-                        """if i <= len(self.dateRangeReports) - 1:   
-                            self.dateRangeReports[i][self.roadIndex] = road_type     
-                            self.dateRangeReports[i][self.descIndex] = description  """   
+                        row[self.descIndex] = description       
 
                         break
 
