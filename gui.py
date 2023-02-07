@@ -1,4 +1,4 @@
-import csv, os
+import csv, os, sys
 import tkinter as tk
 from tkinter import messagebox
 from tkinter import font as tkFont 
@@ -53,7 +53,8 @@ class RootWindow(tk.Frame):
 
     def initHeaders(self):
         with open('reports.csv', newline='') as csvfile:
-            self.headers = list(csv.reader(csvfile, delimiter=','))[0]
+            self.reports_ref = list(csv.reader(csvfile, delimiter=','))
+        self.headers = self.reports_ref[0]
         self.dateIndex = self.headers.index("DATE")
         self.vinIndex = self.headers.index("VIN")
         self.roadIndex = self.headers.index('ROAD')
@@ -75,7 +76,7 @@ class RootWindow(tk.Frame):
         endDriveButton.pack(fill='both', padx=self.pad, pady=self.pad)
 
     def initReportGUI(self):
-        event.set()
+        event.set() # stop recording stream thread
         self.logFrame.destroy()
         self.initFrames()
         self.initCalendar()
@@ -134,7 +135,7 @@ class RootWindow(tk.Frame):
         global streamFrm
         self.recordTime = datetime.now()
         self.gifFileName = self.recordTime.strftime("%m%d%Y_%H%M%S") + '.gif'
-        """tMinus10 = self.recordTime - timedelta(seconds=10)
+        tMinus10 = self.recordTime - timedelta(seconds=10)
         sleep(10)
         gifFrames = []
         for data in streamFrm:
@@ -146,7 +147,7 @@ class RootWindow(tk.Frame):
                 rgb_frame = cv2.cvtColor(f, cv2.COLOR_BGR2RGB)
                 writer.append_data(rgb_frame)
             with lock:
-                streamFrm = []"""
+                streamFrm = []
 
     def captureGPS(self):
         path = os.path.join(os.getcwd(), 'de_gui_ros.py')
@@ -235,7 +236,7 @@ class RootWindow(tk.Frame):
             reader = list(csv.reader(csvfile, delimiter=','))
             for row in reader[1:]:
                 report_date = datetime.strptime(row[self.dateIndex], '%m/%d/%Y')
-                if self.initialDate <= report_date <= self.finalDate:
+                if self.initialDate.date() <= report_date.date() <= self.finalDate.date():   # need to set initial date to start of day and final date to end of day
                     self.dateRangeReports.append(row)
 
     def changeMapPosition(self, i):
@@ -398,25 +399,27 @@ class RootWindow(tk.Frame):
         with open('reports.csv', newline='') as csvfile:
             all_reports = list(csv.reader(csvfile, delimiter=','))
 
+        # check if anything has changed 
         with open('reports.csv', 'w', newline='') as csvfile:
             writer = csv.writer(csvfile) 
 
             for row in all_reports[1:]:   # skip headers
-                for i, attrib in enumerate(self.attributes):                       
+                for attrib in self.attributes:                       
                     if attrib['gifFile'] == row[self.recFileIndex]:
-
-                        road_type = attrib['road_type'].get()
-                        row[self.roadIndex] = road_type
-                        
-                        description = attrib['descBox'].get("1.0", tk.END) 
-                        description = description.replace('\n', '')
-                        row[self.descIndex] = description       
+                        try:
+                            road_type = attrib['road_type'].get()
+                            row[self.roadIndex] = road_type
+                            
+                            description = attrib['descBox'].get("1.0", tk.END) 
+                            description = description.replace('\n', '')
+                            row[self.descIndex] = description       
+                        except:
+                            break
 
                         break
 
             writer.writerows(all_reports)
-
-        self.saveText.insert('1.0', f"SAVED: {datetime.now().strftime('%H:%M:%S') }\n") #1.0 line 1 char 0
+            self.saveText.insert('1.0', f"SAVED: {datetime.now().strftime('%H:%M:%S') }\n") #1.0 line 1 char 0
 
     def initSave(self):
         tk.Button(self.saveFrame, text='SAVE', command=self.saveUserInputs).pack(fill=tk.X)
@@ -425,9 +428,12 @@ class RootWindow(tk.Frame):
         tk.Button(self.saveFrame, text='EXIT GUI', command=self.onUserClose).pack(fill=tk.X)
 
     def onUserClose(self): 
-        self.saveUserInputs()
-        if messagebox.askokcancel('Disengagment GUI 2.0', "Your work has auto-saved!\nAre you sure you want to quit?", parent=self.gifWindow):
-            self.parent.destroy()
+        try:
+            if messagebox.askokcancel('Disengagment GUI 2.0', "Are you sure you want to quit?\nYour work will be auto-saved.", parent=self.gifWindow):
+                self.parent.destroy()
+                self.saveUserInputs()
+        except:
+            sys.exit()  # terminate from logGUI
 
 # ---------- END BUTTON FUNCTIONALITY ---------- #
 

@@ -19,12 +19,9 @@ DONE: when we enter end drive, stop stream thread
 DONE: bug should be fixed by changed zoom in tkintermapview type from int to float
 DONE: reload is not saving because of order of save?  fixed by adding to self.daterangerepoirts list when saving
 DONE: Bug fix! error when you go from more to less disengagments after reload button
-
-file that lives outside of virtual enviuorment...
-starts listener node, then opens gui.py (main) in virtual enviorment
-
-another bug when trying to close window initially in log section
-add functionality for GPS receive with ROS? have seperate ROS that runs on command line
+DONE: add functionality for GPS receive with ROS? have seperate ROS that runs on command line
+DONE: fix todays disengagments not automatically showing
+DONE: fix close reporting initial window another bug when trying to close window initially in log section
 
 
 Notes:
@@ -32,18 +29,5 @@ created venv: https://www.freecodecamp.org/news/how-to-setup-virtual-environment
 ran in dir python3 -m venv de_gui_env
 to activate: source de_gui_env/bin/activate -------- should see (de_gui_env) to left of directory in terminal
 
-
-
 rostopic echo /gps_state
 Look for Longitude: and Latitude: 
-
-rostopic echo /driver_input
-will show steering angle, brake or accel pedal being pressed
-
-rostopic echo /accel_state
-shows linear/angular acceleration values. Disengagment occurs here?
-
-https://www.pythonguis.com/tutorials/packaging-tkinter-applications-windows-pyinstaller/
-to create from scratch: pyinstaller --windowed --add-data="reports.csv;." gui.py
-go into .spec and add recordings folder by replacing ('reports.csv', '.') with ('reports.csv', '.'), ('recordings', 'recordings')
-run pyinstaller app_name.spec (gui.spec) == pyinstaller gui.spec

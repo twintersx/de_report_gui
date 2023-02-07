@@ -1,7 +1,10 @@
 # Custom inputs
 *.gif
 *.txt
-recordings/
+
+recordings/*
+# exception to the rule
+!recordings/.gitkeep 
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
