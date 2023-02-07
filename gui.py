@@ -3,11 +3,12 @@ import tkinter as tk
 from tkinter import messagebox
 from tkinter import font as tkFont 
 from tkcalendar import Calendar # pip install tkcalendar
+from PIL import ImageTk, Image  # pip install pillow
 from datetime import datetime, date, timedelta
 from tkintermapview import TkinterMapView  # pip install tkintermapview
 from functools import partial
-import cv2, imageio
-from PIL import ImageTk, Image  # pip install pillow
+import cv2 # pip install opencv-python
+import imageio  # pip install imageio
 from threading import Lock, Thread, Event
 from time import sleep
 from itertools import count, cycle
