@@ -160,8 +160,8 @@ class RootWindow(tk.Frame):
         newLog[self.dateIndex] = self.recordTime.strftime('%m/%d/%Y')
         newLog[self.vinIndex] = '1N4AZ1CP7KC308251'
         newLog[self.roadIndex] = ''
-        newLog[self.latIndex] = self.latitude
-        newLog[self.longIndex] = self.longitude
+        newLog[self.latIndex] = float(self.latitude)
+        newLog[self.longIndex] = (float(self.longitude)*-1)    # positive value from /gps_state
         newLog[self.recFileIndex] = self.gifFileName
         newLog[self.descIndex] = ''
 
