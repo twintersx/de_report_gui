@@ -12,6 +12,7 @@ import imageio  # pip install imageio
 from threading import Lock, Thread, Event
 from time import sleep
 from itertools import count, cycle
+import subprocess
 
 streamFrm = []
 lock = Lock()
@@ -148,32 +149,25 @@ class RootWindow(tk.Frame):
                 streamFrm = []"""
 
     def captureGPS(self):
-        #run ros lat long script in pc main
-        pass
+        path = os.path.join(os.getcwd(), 'de_gui_ros.py')
+        proc = subprocess.Popen(['python2', path], cwd='/', stdout=subprocess.PIPE)
+        output = proc.communicate()[0].decode()
+        coordinates = output.split('\n')[0]  
+        self.latitude, self.longitude = coordinates.split(', ')
         
     def writeNewCSVRow(self):
-        with open('reports.csv', newline='') as csvfile:
-            all_reports = list(csv.reader(csvfile, delimiter=','))
-        coordinates = all_reports[len(all_reports)-1]
-        all_reports.remove(coordinates)
-        
         newLog = [None] * len(self.headers)
         newLog[self.dateIndex] = self.recordTime.strftime('%m/%d/%Y')
         newLog[self.vinIndex] = '1N4AZ1CP7KC308251'
         newLog[self.roadIndex] = ''
-        newLog[self.latIndex] = coordinates[0]
-        newLog[self.longIndex] = coordinates[1]
+        newLog[self.latIndex] = self.latitude
+        newLog[self.longIndex] = self.longitude
         newLog[self.recFileIndex] = self.gifFileName
         newLog[self.descIndex] = ''
-        all_reports.append(newLog)
 
-        with open('reports.csv', 'w', newline='') as csvfile:
-            writer = csv.writer(csvfile) 
-            writer.writerows(all_reports)
-
-        """with open('reports.csv', 'a', newline='') as csvfile:
+        with open('reports.csv', 'a', newline='') as csvfile:
             writer = csv.writer(csvfile)
-            writer.writerow(newLog)"""
+            writer.writerow(newLog)
 
     def logDEvent(self):
         self.recordGIF()
