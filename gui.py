@@ -25,6 +25,7 @@ class LiveStream():
 
     def stream_start(self):
         global streamFrm
+
         cap = cv2.VideoCapture(0)
         while True:
             ret, frame = cap.read()
@@ -142,7 +143,8 @@ class RootWindow(tk.Frame):
             if data[0] >= tMinus10:
                 gifFrames.append(data[1])
 
-        with imageio.get_writer(f'recordings\{self.gifFileName}') as writer:
+        recording_folder = os.path.join(os.getcwd(), 'recordings', self.gifFileName)
+        with imageio.get_writer(recording_folder) as writer:
             for f in gifFrames:
                 rgb_frame = cv2.cvtColor(f, cv2.COLOR_BGR2RGB)
                 writer.append_data(rgb_frame)

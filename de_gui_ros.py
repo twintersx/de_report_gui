@@ -1,4 +1,4 @@
-#!usr/bin/env
+#!usr/bin/env/python
 
 import rospy, os
 from nrc_msgs.msg import GpsState
