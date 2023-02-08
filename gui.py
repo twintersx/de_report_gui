@@ -14,10 +14,6 @@ from time import sleep
 from itertools import count, cycle
 import subprocess
 
-streamFrm = []
-lock = Lock()
-event = Event()
-
 class RecordGif():
     def __init__(self, logButton):
         Thread(target=self.logDEvent).start()
@@ -25,7 +21,7 @@ class RecordGif():
 
     def logDEvent(self):
         self.recordGIF()
-        #self.captureGPS()
+        self.captureGPS()
         self.writeNewCSVRow()
         self.logButton.config(text="RECORD\nDISENGAGMENT", bg='green')
 
@@ -61,14 +57,14 @@ class RecordGif():
             break
         
     def writeNewCSVRow(self):
-        newLog = [None] * len(self.headers)
-        newLog[self.dateIndex] = self.recordTime.strftime('%m/%d/%Y')
-        newLog[self.vinIndex] = '1N4AZ1CP7KC308251'
-        newLog[self.roadIndex] = ''
-        newLog[self.latIndex] = float(self.latitude)
-        newLog[self.longIndex] = (float(self.longitude)*-1)    # positive value from /gps_state
-        newLog[self.recFileIndex] = self.gifFileName
-        newLog[self.descIndex] = ''
+        newLog = [None] * len(headers)
+        newLog[dateIndex] = self.recordTime.strftime('%m/%d/%Y')
+        newLog[vinIndex] = '1N4AZ1CP7KC308251'
+        newLog[roadIndex] = ''
+        newLog[latIndex] = float(self.latitude)
+        newLog[longIndex] = (float(self.longitude)*-1)    # positive value from /gps_state
+        newLog[recFileIndex] = self.gifFileName
+        newLog[descIndex] = ''
 
         with open('reports.csv', 'a', newline='') as csvfile:
             writer = csv.writer(csvfile)
@@ -106,22 +102,8 @@ class RootWindow(tk.Frame):
         tk.Frame.__init__(self, parent)
         self.parent = parent
         self.pad = 5
-        self.initHeaders()
         self.initLogGUI()
 
-    def initHeaders(self):
-        with open('reports.csv', newline='') as csvfile:
-            self.reports_ref = list(csv.reader(csvfile, delimiter=','))
-        self.headers = self.reports_ref[0]
-        self.dateIndex = self.headers.index("DATE")
-        self.vinIndex = self.headers.index("VIN")
-        self.roadIndex = self.headers.index('ROAD')
-        self.latIndex = self.headers.index('LATITUDE')
-        self.longIndex = self.headers.index('LONGITUDE')
-        self.recFileIndex = self.headers.index('RECORDING FILE')
-        self.descIndex = self.headers.index('DESCRIPTION')
-
-    # add function here that includes recordgif and b utton.config
     def recordButtonFunc(self):
         self.logButton.config(text='RECORDING...', bg='red')
         RecordGif(self.logButton)
@@ -191,7 +173,6 @@ class RootWindow(tk.Frame):
         x = self.parent.winfo_x()
         y = self.parent.winfo_y()
         window.geometry("+%d+%d" % (x + dx, y + dy))
-# ---------- END INITIALIZATION --------- #
     
 # ---------- CALENDAR ---------- #
     def closeInitialCal(self, event):
@@ -238,9 +219,8 @@ class RootWindow(tk.Frame):
 
         self.loadButton = tk.Button(self.loadFrame, text="RELOAD", command=self.onReloadClick)
         self.loadButton.pack(fill=tk.X, side=tk.BOTTOM) 
-# ---------- END CALENDAR ---------- #
     
-# ---------- BUTTON FUNCTIONALITY ---------- #
+# ---------- USER CONTROL FUNCTIONALITY ---------- #
     def onReloadClick(self):
         self.saveUserInputs()
         self.setDateReport()
@@ -252,7 +232,7 @@ class RootWindow(tk.Frame):
         with open('reports.csv', newline='') as csvfile:
             reader = list(csv.reader(csvfile, delimiter=','))
             for row in reader[1:]:
-                report_date = datetime.strptime(row[self.dateIndex], '%m/%d/%Y')
+                report_date = datetime.strptime(row[dateIndex], '%m/%d/%Y')
                 if self.initialDate.date() <= report_date.date() <= self.finalDate.date():   # need to set initial date to start of day and final date to end of day
                     self.dateRangeReports.append(row)
 
@@ -268,8 +248,8 @@ class RootWindow(tk.Frame):
         if len(self.dateRangeReports) >= 1:
             lats, longs = [], []
             for row in self.dateRangeReports:
-                lats.append(float(row[self.latIndex]))
-                longs.append(float(row[self.longIndex]))
+                lats.append(float(row[latIndex]))
+                longs.append(float(row[longIndex]))
             lat = sum(lats) / len(lats)
             long = sum(longs) / len(longs)
 
@@ -364,16 +344,16 @@ class RootWindow(tk.Frame):
 
         self.attributes = []
         for i, row in enumerate(self.dateRangeReports):
-            lat, long = float(row[self.latIndex]), float(row[self.longIndex])
+            lat, long = float(row[latIndex]), float(row[longIndex])
 
-            gifFile = row[self.recFileIndex]
+            gifFile = row[recFileIndex]
             recDateObj = datetime.strptime(gifFile.split('.')[0], '%m%d%Y_%H%M%S')
             formatRecDate = datetime.strftime(recDateObj, '%m/%d/%Y %H:%M:%S')
             title = f"{str(formatRecDate)} \n({lat}, {long})"
               
             descBox = tk.Text(self.userInputFrame, width=5, height=5) 
-            descBox.insert('1.0', row[self.descIndex])
-            road_type = tk.StringVar(value=row[self.roadIndex])
+            descBox.insert('1.0', row[descIndex])
+            road_type = tk.StringVar(value=row[roadIndex])
             radio1 = tk.Radiobutton(self.userInputFrame, text='Highway', value='Highway', variable=road_type)
             radio2 = tk.Radiobutton(self.userInputFrame, text='Street', value='Street', variable=road_type)
 
@@ -427,14 +407,14 @@ class RootWindow(tk.Frame):
 
             for row in all_reports[1:]:   # skip headers
                 for attrib in self.attributes:                       
-                    if attrib['gifFile'] == row[self.recFileIndex]:
+                    if attrib['gifFile'] == row[recFileIndex]:
                         try:
                             road_type = attrib['road_type'].get()
-                            row[self.roadIndex] = road_type
+                            row[roadIndex] = road_type
                             
                             description = attrib['descBox'].get("1.0", tk.END) 
                             description = description.replace('\n', '')
-                            row[self.descIndex] = description       
+                            row[descIndex] = description       
                         except:
                             pass
 
@@ -456,9 +436,22 @@ class RootWindow(tk.Frame):
         except:
             sys.exit()  # terminate from logGUI
 
-# ---------- END BUTTON FUNCTIONALITY ---------- #
+# ---------- MAIN ---------- #
+if __name__ == "__main__":
+    streamFrm = []
+    lock = Lock()
+    event = Event()
 
-def main():
+    with open('reports.csv', newline='') as csvfile:
+        headers = list(csv.reader(csvfile, delimiter=','))[0]
+    dateIndex = headers.index("DATE")
+    vinIndex = headers.index("VIN")
+    roadIndex = headers.index('ROAD')
+    latIndex = headers.index('LATITUDE')
+    longIndex = headers.index('LONGITUDE')
+    recFileIndex = headers.index('RECORDING FILE')
+    descIndex = headers.index('DESCRIPTION')
+
     root = tk.Tk()
     root.title('Disengagment GUI 2.0')
     root.resizable(False, False)
@@ -468,8 +461,4 @@ def main():
     root.protocol("WM_DELETE_WINDOW", rw.onUserClose)
 
     LiveStream().stream_start
-
     root.mainloop()
-
-if __name__ == "__main__":
-    main()
