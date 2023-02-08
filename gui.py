@@ -41,18 +41,26 @@ class RecordGif():
         with imageio.get_writer(recording_folder) as writer:
             for f in gifFrames:
                 rgb_frame = cv2.cvtColor(f, cv2.COLOR_BGR2RGB)
-                writer.append_data(rgb_frame)
+                scale_percent = 150
+                width = int(rgb_frame.shape[1] * scale_percent / 100)
+                height = int(rgb_frame.shape[0] * scale_percent / 100)
+                dim = (width, height)
+                resized = cv2.resize(rgb_frame, dim, interpolation = cv2.INTER_AREA)
+                writer.append_data(resized)
 
     def captureGPS(self):
         path = os.path.join(os.getcwd(), 'de_gui_ros.py')
-        while True: #will currently look for inifinity if nothing is returned
+        while True:
             try:
                 proc = subprocess.Popen(['python2', path], cwd='/', stdout=subprocess.PIPE)
                 output = proc.communicate()[0].decode()
                 coordinates = output.split('\n')[0]  
                 self.latitude, self.longitude = coordinates.split(', ')
-            except:
+
+            except Exception as e:
+                print(e)
                 continue
+                
             break
         
     def writeNewCSVRow(self):
@@ -301,10 +309,6 @@ class RootWindow(tk.Frame):
         if isinstance(gifPath, str):
             img = Image.open(gifPath)
             # --- Scale/Resize Image --- #
-            new_width = 400
-            wpercent = (new_width / float(img.size[0]))
-            hsize = int((float(img.size[1]) * float(wpercent)))
-            img = img.resize((new_width, hsize), Image.ANTIALIAS)
 
         frames = []
         self.frames = cycle(frames)
