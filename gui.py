@@ -24,6 +24,7 @@ class RecordGif():
         self.captureGPS()
         self.writeNewCSVRow()
         self.logButton.config(text="RECORD\nDISENGAGMENT", bg='green')
+        return
 
     def recordGIF(self):
         global streamFrm
@@ -41,8 +42,6 @@ class RecordGif():
             for f in gifFrames:
                 rgb_frame = cv2.cvtColor(f, cv2.COLOR_BGR2RGB)
                 writer.append_data(rgb_frame)
-            with lock:
-                streamFrm = []
 
     def captureGPS(self):
         path = os.path.join(os.getcwd(), 'de_gui_ros.py')
