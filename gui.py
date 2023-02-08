@@ -31,7 +31,7 @@ class LiveStream():
             ret, frame = cap.read()
             with lock:
                 streamFrm.append((datetime.now(), frame))
-            sleep(0.25)  # fps
+            sleep(0.2)  # fps
             
             if len(streamFrm) > 1200:
                 streamFrm = streamFrm[1100:]
@@ -153,10 +153,17 @@ class RootWindow(tk.Frame):
 
     def captureGPS(self):
         path = os.path.join(os.getcwd(), 'de_gui_ros.py')
-        proc = subprocess.Popen(['python2', path], cwd='/', stdout=subprocess.PIPE)
-        output = proc.communicate()[0].decode()
-        coordinates = output.split('\n')[0]  
-        self.latitude, self.longitude = coordinates.split(', ')
+
+        while True:
+            try:
+                proc = subprocess.Popen(['python2', path], cwd='/', stdout=subprocess.PIPE)
+                output = proc.communicate()[0].decode()
+                coordinates = output.split('\n')[0]  
+                self.latitude, self.longitude = coordinates.split(', ')
+            except:
+                continue
+            #sleep(1)
+            break
         
     def writeNewCSVRow(self):
         newLog = [None] * len(self.headers)
@@ -176,6 +183,7 @@ class RootWindow(tk.Frame):
         self.recordGIF()
         self.captureGPS()
         self.writeNewCSVRow()
+        print("RECORDING HAS ENDED! -----------------")
 # ---------- END RECORD WINDOW ---------- #
     
 # ---------- CALENDAR ---------- #
@@ -263,7 +271,7 @@ class RootWindow(tk.Frame):
             lat, long = 37.376774, -121.989967
 
         self.map_widget.set_position(lat, long)
-        self.map_widget.set_zoom(12)
+        self.map_widget.set_zoom(14)
         self.map_widget.pack(fill='both')
 
     def clickMarker(self, i):
