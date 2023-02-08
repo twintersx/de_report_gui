@@ -18,10 +18,66 @@ streamFrm = []
 lock = Lock()
 event = Event()
 
+class RecordGif():
+    def __init__(self, logButton):
+        Thread(target=self.logDEvent).start()
+        self.logButton = logButton
+
+    def logDEvent(self):
+        self.recordGIF()
+        #self.captureGPS()
+        self.writeNewCSVRow()
+        self.logButton.config(text="RECORD\nDISENGAGMENT", bg='green')
+
+    def recordGIF(self):
+        global streamFrm
+        self.recordTime = datetime.now()
+        self.gifFileName = self.recordTime.strftime("%m%d%Y_%H%M%S") + '.gif'
+        tMinus10 = self.recordTime - timedelta(seconds=10)
+        sleep(10)
+        gifFrames = []
+        for data in streamFrm:
+            if data[0] >= tMinus10:
+                gifFrames.append(data[1])
+
+        recording_folder = os.path.join(os.getcwd(), 'recordings', self.gifFileName)
+        with imageio.get_writer(recording_folder) as writer:
+            for f in gifFrames:
+                rgb_frame = cv2.cvtColor(f, cv2.COLOR_BGR2RGB)
+                writer.append_data(rgb_frame)
+            with lock:
+                streamFrm = []
+
+    def captureGPS(self):
+        path = os.path.join(os.getcwd(), 'de_gui_ros.py')
+        while True: #will currently look for inifinity if nothing is returned
+            try:
+                proc = subprocess.Popen(['python2', path], cwd='/', stdout=subprocess.PIPE)
+                output = proc.communicate()[0].decode()
+                coordinates = output.split('\n')[0]  
+                self.latitude, self.longitude = coordinates.split(', ')
+            except:
+                continue
+            break
+        
+    def writeNewCSVRow(self):
+        newLog = [None] * len(self.headers)
+        newLog[self.dateIndex] = self.recordTime.strftime('%m/%d/%Y')
+        newLog[self.vinIndex] = '1N4AZ1CP7KC308251'
+        newLog[self.roadIndex] = ''
+        newLog[self.latIndex] = float(self.latitude)
+        newLog[self.longIndex] = (float(self.longitude)*-1)    # positive value from /gps_state
+        newLog[self.recFileIndex] = self.gifFileName
+        newLog[self.descIndex] = ''
+
+        with open('reports.csv', 'a', newline='') as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow(newLog)
+
+
 class LiveStream():
     def __init__(self):
-        ts = Thread(target=self.stream_start, daemon=True)
-        ts.start()
+        Thread(target=self.stream_start).start()
 
     def stream_start(self):
         global streamFrm
@@ -42,6 +98,7 @@ class LiveStream():
         cap.release()               # Close the window / Release webcam
         cv2.destroyAllWindows()     # De-allocate any associated memory usage
         return
+
 
 class RootWindow(tk.Frame):
 # ---------- INITIALIZATION --------- #
@@ -64,17 +121,22 @@ class RootWindow(tk.Frame):
         self.recFileIndex = self.headers.index('RECORDING FILE')
         self.descIndex = self.headers.index('DESCRIPTION')
 
+    # add function here that includes recordgif and b utton.config
+    def recordButtonFunc(self):
+        self.logButton.config(text='RECORDING...', bg='red')
+        RecordGif(self.logButton)
+
     def initLogGUI(self):
         self.logFrame = tk.Frame(self.parent)
         self.logFrame.pack(fill='both')
         
         helv36 = tkFont.Font(family='Helvetica', size=36, weight='bold')
-        self.logButton = tk.Button(self.logFrame, height=10, width=20, text="RECORD\nDISENGAGMENT", command=self.logDEvent, bg='green', font=helv36) 
-        self.logButton.pack(fill='both', padx=self.pad, pady=self.pad)
+        self.logButton = tk.Button(self.logFrame, height=10, width=20, text="RECORD\nDISENGAGMENT", command=self.recordButtonFunc, bg='green', font=helv36) 
+        self.logButton.pack(fill='both', padx=self.pad, side=tk.TOP)
 
-        helv10 = tkFont.Font(family='Helvetica', size=20, weight='bold')
-        endDriveButton = tk.Button(self.logFrame, text="END DRIVE", command=self.initReportGUI, bg='red', font=helv10)
-        endDriveButton.pack(fill='both', padx=self.pad, pady=self.pad)
+        helv20 = tkFont.Font(family='Helvetica', size=20, weight='bold')
+        endDriveButton = tk.Button(self.logFrame, text="END DRIVE", command=self.initReportGUI, bg='red', font=helv20)
+        endDriveButton.pack(fill='both', padx=self.pad, pady=self.pad, side=tk.BOTTOM)
 
     def initReportGUI(self):
         event.set() # stop recording stream thread
@@ -123,68 +185,13 @@ class RootWindow(tk.Frame):
         self.gifWindow.resizable(False, False)
 
     def initMapWidget(self):
-        self.map_widget = TkinterMapView(self.mapFrame, width=1000, height=1000)
+        self.map_widget = TkinterMapView(self.mapFrame, width=850, height=850)
 
     def placeWindowRelRoot(self, window, dx, dy):
         x = self.parent.winfo_x()
         y = self.parent.winfo_y()
         window.geometry("+%d+%d" % (x + dx, y + dy))
 # ---------- END INITIALIZATION --------- #
-
-# ---------- RECORD WINDOW ---------- #
-    def recordGIF(self):
-        global streamFrm
-        self.recordTime = datetime.now()
-        self.gifFileName = self.recordTime.strftime("%m%d%Y_%H%M%S") + '.gif'
-        tMinus10 = self.recordTime - timedelta(seconds=10)
-        sleep(10)
-        gifFrames = []
-        for data in streamFrm:
-            if data[0] >= tMinus10:
-                gifFrames.append(data[1])
-
-        recording_folder = os.path.join(os.getcwd(), 'recordings', self.gifFileName)
-        with imageio.get_writer(recording_folder) as writer:
-            for f in gifFrames:
-                rgb_frame = cv2.cvtColor(f, cv2.COLOR_BGR2RGB)
-                writer.append_data(rgb_frame)
-            with lock:
-                streamFrm = []
-
-    def captureGPS(self):
-        path = os.path.join(os.getcwd(), 'de_gui_ros.py')
-
-        while True:
-            try:
-                proc = subprocess.Popen(['python2', path], cwd='/', stdout=subprocess.PIPE)
-                output = proc.communicate()[0].decode()
-                coordinates = output.split('\n')[0]  
-                self.latitude, self.longitude = coordinates.split(', ')
-            except:
-                continue
-            #sleep(1)
-            break
-        
-    def writeNewCSVRow(self):
-        newLog = [None] * len(self.headers)
-        newLog[self.dateIndex] = self.recordTime.strftime('%m/%d/%Y')
-        newLog[self.vinIndex] = '1N4AZ1CP7KC308251'
-        newLog[self.roadIndex] = ''
-        newLog[self.latIndex] = float(self.latitude)
-        newLog[self.longIndex] = (float(self.longitude)*-1)    # positive value from /gps_state
-        newLog[self.recFileIndex] = self.gifFileName
-        newLog[self.descIndex] = ''
-
-        with open('reports.csv', 'a', newline='') as csvfile:
-            writer = csv.writer(csvfile)
-            writer.writerow(newLog)
-
-    def logDEvent(self):
-        self.recordGIF()
-        self.captureGPS()
-        self.writeNewCSVRow()
-        print("RECORDING HAS ENDED! -----------------")
-# ---------- END RECORD WINDOW ---------- #
     
 # ---------- CALENDAR ---------- #
     def closeInitialCal(self, event):
@@ -313,15 +320,21 @@ class RootWindow(tk.Frame):
         self.gifFrame.pack()
 
         if isinstance(gifPath, str):
-            im = Image.open(gifPath)
+            img = Image.open(gifPath)
+            # --- Scale/Resize Image --- #
+            new_width = 400
+            wpercent = (new_width / float(img.size[0]))
+            hsize = int((float(img.size[1]) * float(wpercent)))
+            img = img.resize((new_width, hsize), Image.ANTIALIAS)
+
         frames = []
         self.frames = cycle(frames)
-        self.delay = im.info['duration']
+        self.delay = img.info['duration']
 
         try:
             for i in count(1):
-                frames.append(ImageTk.PhotoImage(im.copy()))
-                im.seek(i)
+                frames.append(ImageTk.PhotoImage(img.copy()))
+                img.seek(i)
         except EOFError:
             pass
 
@@ -375,7 +388,7 @@ class RootWindow(tk.Frame):
                 'marker': marker,
                 'lat': lat,
                 'long': long,
-                'zoom': 15,
+                'zoom': 16,
                 'gifFile': gifFile,
                 'descBox': descBox,
                 'title': title,
@@ -409,7 +422,6 @@ class RootWindow(tk.Frame):
         with open('reports.csv', newline='') as csvfile:
             all_reports = list(csv.reader(csvfile, delimiter=','))
 
-        # check if anything has changed 
         with open('reports.csv', 'w', newline='') as csvfile:
             writer = csv.writer(csvfile) 
 
@@ -424,7 +436,7 @@ class RootWindow(tk.Frame):
                             description = description.replace('\n', '')
                             row[self.descIndex] = description       
                         except:
-                            break
+                            pass
 
                         break
 
@@ -433,9 +445,8 @@ class RootWindow(tk.Frame):
 
     def initSave(self):
         tk.Button(self.saveFrame, text='SAVE', command=self.saveUserInputs).pack(fill=tk.X)
-        self.saveText = tk.Text(self.saveFrame, width=5, height=5)
+        self.saveText = tk.Text(self.saveFrame, width=5, height=2)
         self.saveText.pack(fill=tk.X)
-        tk.Button(self.saveFrame, text='EXIT GUI', command=self.onUserClose).pack(fill=tk.X)
 
     def onUserClose(self): 
         try:
@@ -449,12 +460,11 @@ class RootWindow(tk.Frame):
 
 def main():
     root = tk.Tk()
-    root.resizable(False, False)
     root.title('Disengagment GUI 2.0')
-    #root.attributes('-fullscreen', True)
+    root.resizable(False, False)
 
     rw = RootWindow(root)
-    rw.pack(side='top', fill='both', expand=True)
+    rw.pack(fill='both', expand=True)
     root.protocol("WM_DELETE_WINDOW", rw.onUserClose)
 
     LiveStream().stream_start

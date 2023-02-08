@@ -23,12 +23,12 @@ DONE: add functionality for GPS receive with ROS? have seperate ROS that runs on
 DONE: fix todays disengagments not automatically showing
 DONE: fix close reporting initial window another bug when trying to close window initially in log section
 DONE: sometimes does not capture gps, unknown, fix
+DONE: scale up whole gui including gifs
 
-
-
+put entire recording loop in seperate thread/class. create a global variable of button state that tells the main gui class to switch back to non recording
 work on a scroll bar for many disengagments. 
 do whatever you need to to add a recording button 
-scale up whole gui including gifs
+make two exceptions for loop, if split not working, continue, if ros is not active at all, that is another exception
 
 
 Notes:
