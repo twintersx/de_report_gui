@@ -91,7 +91,7 @@ class RecordGif():
         newLog[vinIndex] = '1N4AZ1CP7KC308251'
         newLog[roadIndex] = ''
         newLog[latIndex] = self.latitude
-        newLog[longIndex] = self.longitude*-1    # positive value from /gps_state
+        newLog[longIndex] = (-abs(self.longitude)) # force positive value from /gps_state to negative
         newLog[recFileIndex] = self.gifFileName
         newLog[descIndex] = ''
 
@@ -118,20 +118,24 @@ class LiveStream():
         cap = cv2.VideoCapture(0)
         while True:
             ret, frame = cap.read()
-            with lock:
+            with lock:  
                 streamFrm.append((datetime.now(), frame))
-            sleep(0.35)  # fps
-            
-            if len(streamFrm) > 1200:
-                streamFrm = streamFrm[1100:]
 
+            fps, buffer_limit_seconds = 0.33, 300
+            sleep(fps) 
+
+            if len(streamFrm) > fps * buffer_limit_seconds:
+                with lock:
+                    # when buffer limit is reached, save only the last 20 seconds 
+                    streamFrm = streamFrm[(buffer_limit_seconds-20):]
+
+            # break from this while loop from root.mainloop() (stop recording once drive is done)
             if event.is_set():
                 break
 
         cap.release()               # Close the window / Release webcam
         cv2.destroyAllWindows()     # De-allocate any associated memory usage
         return
-
 
 class RootWindow(tk.Frame):
 # ---------- INITIALIZATION --------- #
@@ -470,9 +474,9 @@ class RootWindow(tk.Frame):
 
 # ---------- MAIN ---------- #
 if __name__ == "__main__":
-    streamFrm = []
-    lock = Lock()
-    event = Event()
+    streamFrm = []  # globally pass frames from LiveStream() to RecordGIF() threads
+    lock = Lock()   # Lock() prevents other threads from accessing a shared variable
+    event = Event() # global variable needed to stop LiveStream thread from root.mainloop()
 
     with open('reports.csv', newline='') as csvfile:
         headers = list(csv.reader(csvfile, delimiter=','))[0]
