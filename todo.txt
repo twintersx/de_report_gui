@@ -25,9 +25,9 @@ DONE: fix close reporting initial window another bug when trying to close window
 DONE: sometimes does not capture gps, unknown, fix
 DONE: scale up whole gui including gifs
 DONE: put entire recording loop in seperate thread/class
+DONE: Make csv more reliable, resize gif and fix close not saving to csv error
 
 work on a scroll bar for many disengagments.  
-make two exceptions for loop, if split not working, continue, if ros is not active at all, that is another exception
 
 Notes:
 created venv: https://www.freecodecamp.org/news/how-to-setup-virtual-environments-in-python/

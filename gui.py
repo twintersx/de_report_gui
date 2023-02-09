@@ -50,15 +50,16 @@ class RecordGif():
 
     def captureGPS(self):
         path = os.path.join(os.getcwd(), 'de_gui_ros.py')
-        while True:
+        n = 0
+        while n < 10:
             try:
                 proc = subprocess.Popen(['python2', path], cwd='/', stdout=subprocess.PIPE)
                 output = proc.communicate()[0].decode()
                 coordinates = output.split('\n')[0]  
                 self.latitude, self.longitude = coordinates.split(', ')
 
-            except Exception as e:
-                print(e)
+            except:
+                n += 1
                 continue
                 
             break
@@ -73,9 +74,19 @@ class RecordGif():
         newLog[recFileIndex] = self.gifFileName
         newLog[descIndex] = ''
 
-        with open('reports.csv', 'a', newline='') as csvfile:
+        with open ('reports.csv', newline='') as csvfile:
+            reports = list(csv.reader(csvfile, delimiter=','))
+            print(reports)
+
+        for row in list(reports):
+            if not row:
+                reports.remove(row)
+                print('removed line')
+
+        reports.append(newLog)
+        with open('reports.csv', 'w', newline='') as csvfile:
             writer = csv.writer(csvfile)
-            writer.writerow(newLog)
+            writer.writerows(reports)
 
 
 class LiveStream():
@@ -90,7 +101,7 @@ class LiveStream():
             ret, frame = cap.read()
             with lock:
                 streamFrm.append((datetime.now(), frame))
-            sleep(0.2)  # fps
+            sleep(0.35)  # fps
             
             if len(streamFrm) > 1200:
                 streamFrm = streamFrm[1100:]
@@ -308,7 +319,6 @@ class RootWindow(tk.Frame):
 
         if isinstance(gifPath, str):
             img = Image.open(gifPath)
-            # --- Scale/Resize Image --- #
 
         frames = []
         self.frames = cycle(frames)
@@ -434,8 +444,8 @@ class RootWindow(tk.Frame):
     def onUserClose(self): 
         try:
             if messagebox.askokcancel('Disengagment GUI 2.0', "Are you sure you want to quit?\nYour work will be auto-saved.", parent=self.gifWindow):
-                self.parent.destroy()
                 self.saveUserInputs()
+                self.parent.destroy()
         except:
             sys.exit()  # terminate from logGUI
 
