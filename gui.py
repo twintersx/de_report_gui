@@ -13,51 +13,76 @@ from itertools import count, cycle
 
 class RecordGif():
     def __init__(self, logButton):
+        # Recording of GIF runs in thread to allow multiple recordings in the same timeframe, 
+        # additional button functionality and ability to change text/color of button while recording. 
         Thread(target=self.logDEvent).start()
         self.logButton = logButton
 
     def logDEvent(self):
+        # Main function structure of recording thread
+        self.recordTime = datetime.now()
         self.captureGPS()
         self.recordGIF()
+        self.saveGIF()
         self.writeNewCSVRow()
         self.logButton.config(text="RECORD\nDISENGAGMENT", bg='green')
-        return
+        return  # needed to end thread
 
     def captureGPS(self):
-        self.recordTime = datetime.now()
+        # small chance GPS coordinates are not captured from ROS. 
+        # retries up to 10 times but breaks early if successfull
         path = os.path.join(os.getcwd(), 'de_gui_ros.py')
         n = 0
         while n < 10:
             try:
+                # need to run ROS python script outside of virtual enviorment with python2 (for ROS1)
+                # the script is executed in the systems root directory '/'
+                # the script terminal output is captured via stdout=subprocess.PIPE
                 proc = subprocess.Popen(['python2', path], cwd='/', stdout=subprocess.PIPE)
-                output = proc.communicate()[0].decode()
-                coordinates = output.split('\n')[0]  
-                self.latitude, self.longitude = coordinates.split(', ')
 
+                # the output is captured and the coordinates are divided
+                output = proc.communicate()[0].decode()
+                coordinates = output.split('\n')[0]
+
+                # if 1st row of "coordinates" is not a tuple or a number, an exception is raised and the loop retries
+                self.latitude, self.longitude = coordinates.split(', ')
+                self.latitude = float(self.latitude)
+                self.longitude = float(self.longitude)
             except:
                 n += 1
-                continue
-                
-            break
-    def recordGIF(self):
-        global streamFrm
-        self.gifFileName = self.recordTime.strftime("%m%d%Y_%H%M%S") + '.gif'
-        tMinus10 = self.recordTime - timedelta(seconds=10)
-        sleep(10)
-        gifFrames = []
-        for data in streamFrm:
-            if data[0] >= tMinus10:
-                gifFrames.append(data[1])
+                continue 
 
+            # No exception was raised, continue to recordGIF()
+            return
+        
+        print("\nNot able to capture GPS coordinates from ROS.\nHas a GPS LOCK been established?\n")
+
+    def recordGIF(self):
+        global streamFrm # used to access a variable across threads
+        self.gifFileName = self.recordTime.strftime("%m%d%Y_%H%M%S") + '.gif'
+        tMinus15 = self.recordTime - timedelta(seconds=15)
+        
+        sleep(10)   # wait until LiveStream captures more stream frames
+
+        # gets all frames from tMinus# to newest recorded frame
+        self.gifFrames = []
+        for data in streamFrm:
+            if data[0] >= tMinus15:
+                self.gifFrames.append(data[1])
+
+    def saveGIF(self):
         recording_folder = os.path.join(os.getcwd(), 'recordings', self.gifFileName)
+        # Saves group of frames as a .gif in "recordings" folder
         with imageio.get_writer(recording_folder) as writer:
-            for f in gifFrames:
-                rgb_frame = cv2.cvtColor(f, cv2.COLOR_BGR2RGB)
+            for f in self.gifFrames:
+                rgb_frame = cv2.cvtColor(f, cv2.COLOR_BGR2RGB)  # imageio needs RGB format
+                
+                # resize image to view easier in reporting window
                 scale_percent = 150
                 width = int(rgb_frame.shape[1] * scale_percent / 100)
                 height = int(rgb_frame.shape[0] * scale_percent / 100)
-                dim = (width, height)
-                resized = cv2.resize(rgb_frame, dim, interpolation = cv2.INTER_AREA)
+                resized = cv2.resize(rgb_frame, (width, height), interpolation = cv2.INTER_AREA)
+
                 writer.append_data(resized)
 
     def writeNewCSVRow(self):
@@ -65,14 +90,15 @@ class RecordGif():
         newLog[dateIndex] = self.recordTime.strftime('%m/%d/%Y')
         newLog[vinIndex] = '1N4AZ1CP7KC308251'
         newLog[roadIndex] = ''
-        newLog[latIndex] = float(self.latitude)
-        newLog[longIndex] = (float(self.longitude)*-1)    # positive value from /gps_state
+        newLog[latIndex] = self.latitude
+        newLog[longIndex] = self.longitude*-1    # positive value from /gps_state
         newLog[recFileIndex] = self.gifFileName
         newLog[descIndex] = ''
 
         with open ('reports.csv', newline='') as csvfile:
             reports = list(csv.reader(csvfile, delimiter=','))
 
+        # removes empty lines if csv is manually edited outside of GUI
         for row in list(reports):
             if not row:
                 reports.remove(row)
