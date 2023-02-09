@@ -95,18 +95,19 @@ class RecordGif():
         newLog[recFileIndex] = self.gifFileName
         newLog[descIndex] = ''
 
-        with open ('reports.csv', newline='') as csvfile:
-            reports = list(csv.reader(csvfile, delimiter=','))
+        with lock:
+            with open ('reports.csv', newline='') as csvfile:
+                reports = list(csv.reader(csvfile, delimiter=','))
 
-        # removes empty lines if csv is manually edited outside of GUI
-        for row in list(reports):
-            if not row:
-                reports.remove(row)
+            # removes empty lines if csv is manually edited outside of GUI
+            for row in list(reports):
+                if not row:
+                    reports.remove(row)
 
-        reports.append(newLog)
-        with open('reports.csv', 'w', newline='') as csvfile:
-            writer = csv.writer(csvfile)
-            writer.writerows(reports)
+            reports.append(newLog)
+            with open('reports.csv', 'w', newline='') as csvfile:
+                writer = csv.writer(csvfile)
+                writer.writerows(reports)
 
 class LiveStream():
     def __init__(self):
