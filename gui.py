@@ -1,4 +1,4 @@
-import csv, os, sys
+import csv, os, sys, subprocess, cv2, imageio # pip install opencv-python | pip install imageio
 import tkinter as tk
 from tkinter import messagebox
 from tkinter import font as tkFont 
@@ -7,12 +7,9 @@ from PIL import ImageTk, Image  # pip install pillow
 from datetime import datetime, date, timedelta
 from tkintermapview import TkinterMapView  # pip install tkintermapview
 from functools import partial
-import cv2 # pip install opencv-python
-import imageio  # pip install imageio
 from threading import Lock, Thread, Event
 from time import sleep
 from itertools import count, cycle
-import subprocess
 
 class RecordGif():
     def __init__(self, logButton):
@@ -20,15 +17,30 @@ class RecordGif():
         self.logButton = logButton
 
     def logDEvent(self):
-        self.recordGIF()
         self.captureGPS()
+        self.recordGIF()
         self.writeNewCSVRow()
         self.logButton.config(text="RECORD\nDISENGAGMENT", bg='green')
         return
 
+    def captureGPS(self):
+        self.recordTime = datetime.now()
+        path = os.path.join(os.getcwd(), 'de_gui_ros.py')
+        n = 0
+        while n < 10:
+            try:
+                proc = subprocess.Popen(['python2', path], cwd='/', stdout=subprocess.PIPE)
+                output = proc.communicate()[0].decode()
+                coordinates = output.split('\n')[0]  
+                self.latitude, self.longitude = coordinates.split(', ')
+
+            except:
+                n += 1
+                continue
+                
+            break
     def recordGIF(self):
         global streamFrm
-        self.recordTime = datetime.now()
         self.gifFileName = self.recordTime.strftime("%m%d%Y_%H%M%S") + '.gif'
         tMinus10 = self.recordTime - timedelta(seconds=10)
         sleep(10)
@@ -48,22 +60,6 @@ class RecordGif():
                 resized = cv2.resize(rgb_frame, dim, interpolation = cv2.INTER_AREA)
                 writer.append_data(resized)
 
-    def captureGPS(self):
-        path = os.path.join(os.getcwd(), 'de_gui_ros.py')
-        n = 0
-        while n < 10:
-            try:
-                proc = subprocess.Popen(['python2', path], cwd='/', stdout=subprocess.PIPE)
-                output = proc.communicate()[0].decode()
-                coordinates = output.split('\n')[0]  
-                self.latitude, self.longitude = coordinates.split(', ')
-
-            except:
-                n += 1
-                continue
-                
-            break
-        
     def writeNewCSVRow(self):
         newLog = [None] * len(headers)
         newLog[dateIndex] = self.recordTime.strftime('%m/%d/%Y')
@@ -85,7 +81,6 @@ class RecordGif():
         with open('reports.csv', 'w', newline='') as csvfile:
             writer = csv.writer(csvfile)
             writer.writerows(reports)
-
 
 class LiveStream():
     def __init__(self):

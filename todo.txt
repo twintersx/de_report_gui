@@ -26,6 +26,7 @@ DONE: sometimes does not capture gps, unknown, fix
 DONE: scale up whole gui including gifs
 DONE: put entire recording loop in seperate thread/class
 DONE: Make csv more reliable, resize gif and fix close not saving to csv error
+DONE: make GPS coord when you press log, not after video is done recording
 
 work on a scroll bar for many disengagments.  
 
