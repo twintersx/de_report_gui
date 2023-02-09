@@ -76,12 +76,10 @@ class RecordGif():
 
         with open ('reports.csv', newline='') as csvfile:
             reports = list(csv.reader(csvfile, delimiter=','))
-            print(reports)
 
         for row in list(reports):
             if not row:
                 reports.remove(row)
-                print('removed line')
 
         reports.append(newLog)
         with open('reports.csv', 'w', newline='') as csvfile:
