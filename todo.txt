@@ -28,6 +28,7 @@ DONE: put entire recording loop in seperate thread/class
 DONE: Make csv more reliable, resize gif and fix close not saving to csv error
 DONE: make GPS coord when you press log, not after video is done recording
 
+make a shortcut on ubuntu desktop
 work on a scroll bar for many disengagments.  
 
 Notes:

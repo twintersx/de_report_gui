@@ -4,7 +4,7 @@ import rospy, os
 from nrc_msgs.msg import GpsState
 
 def gps_callback(msg):
-    print(str(msg.Latitude) + ', ' + str(msg.Longitude))
+    print(str(msg.Latitude) + 'abc123xyz' + str(msg.Longitude)) # abc123xyz is unique delimiter
     rospy.sleep(0.1)
     os.system("rosnode kill " + 'de_gui_node')
     

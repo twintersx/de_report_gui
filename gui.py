@@ -44,8 +44,8 @@ class RecordGif():
                 output = proc.communicate()[0].decode()
                 coordinates = output.split('\n')[0]
 
-                # if 1st row of "coordinates" is not a tuple or a number, an exception is raised and the loop retries
-                self.latitude, self.longitude = coordinates.split(', ')
+                # if 1st row of "coordinates" is not split by unqiue delimiter or a number, an exception is raised and the loop retries
+                self.latitude, self.longitude = coordinates.split('abc123xyz')  # this delimiter is set in the de_gui_ros.py script 
                 self.latitude = float(self.latitude)
                 self.longitude = float(self.longitude)
             except:
