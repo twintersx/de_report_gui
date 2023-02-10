@@ -1,4 +1,6 @@
-# pip install pillow, opencv-python, imageio, tkcalendar, tkintermapview 
+# source /home/../de_report_gui/venv/bin/activate
+# pip3 install -U pip -U setuptools
+# pip install pillow opencv-python imageio tkcalendar tkintermapview 
 import csv, os, sys, subprocess, cv2, imageio 
 import tkinter as tk
 from tkinter import messagebox
