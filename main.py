@@ -445,28 +445,28 @@ class RootWindow(tk.Frame):
 
     def saveUserInputs(self):
         with open('reports.csv', newline='') as csvfile:
-            all_reports = list(csv.reader(csvfile, delimiter=','))
+            all_reports = list(csv.reader(csvfile, delimiter=',')) 
+
+        for row in all_reports[1:]:   # skip headers
+            for attrib in self.attributes:                       
+                if attrib['gifFile'] == row[recFileIndex]:
+                    try:
+                        road_type = attrib['road_type'].get()
+                        row[roadIndex] = road_type
+                        
+                        description = attrib['descBox'].get("1.0", tk.END) 
+                        description = description.replace('\n', '')
+                        row[descIndex] = description       
+                    except:
+                        pass
+
+                    break
 
         with open('reports.csv', 'w', newline='') as csvfile:
-            writer = csv.writer(csvfile) 
-
-            for row in all_reports[1:]:   # skip headers
-                for attrib in self.attributes:                       
-                    if attrib['gifFile'] == row[recFileIndex]:
-                        try:
-                            road_type = attrib['road_type'].get()
-                            row[roadIndex] = road_type
-                            
-                            description = attrib['descBox'].get("1.0", tk.END) 
-                            description = description.replace('\n', '')
-                            row[descIndex] = description       
-                        except:
-                            pass
-
-                        break
-
+            writer = csv.writer(csvfile)
             writer.writerows(all_reports)
-            self.saveText.insert('1.0', f"SAVED: {datetime.now().strftime('%H:%M:%S') }\n") #1.0 line 1 char 0
+            
+        self.saveText.insert('1.0', f"SAVED: {datetime.now().strftime('%H:%M:%S') }\n") #1.0 line 1 char 0
 
     def onUserClose(self): 
         try:
@@ -483,6 +483,7 @@ if __name__ == "__main__":
     lock = Lock()   # Lock() prevents other threads from accessing a shared variable
     event = Event() # global variable needed to stop LiveStream thread from root.mainloop()
 
+    #DATE,VIN,ROAD,LATITUDE,LONGITUDE,RECORDING FILE,DESCRIPTION
     with open('reports.csv', newline='') as csvfile:
         headers = list(csv.reader(csvfile, delimiter=','))[0]
     dateIndex = headers.index("DATE")
