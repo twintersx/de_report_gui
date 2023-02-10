@@ -1,4 +1,3 @@
-
 # pip install pillow, opencv-python, imageio, tkcalendar, tkintermapview 
 import csv, os, sys, subprocess, cv2, imageio 
 import tkinter as tk
@@ -47,7 +46,7 @@ class RecordGif():
     def captureGPS(self):
         # small chance GPS coordinates are not captured from ROS. 
         # retries up to 10 times but breaks early if successfull
-        path = os.path.join(os.getcwd(), 'de_gui_ros.py')
+        path = os.path.join(os.getcwd(), 'ros.py')
         n = 0
         while n < 10:
             try:

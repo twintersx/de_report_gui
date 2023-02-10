@@ -2,7 +2,6 @@
 *.gif
 *.txt
 *.pptx
-
 recordings/*
 # exception to the rule
 !recordings/.gitkeep 

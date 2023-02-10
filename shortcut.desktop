@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=Disengagment GUI
+Exec=/home/Desktop/de_report_gui/venv/bin/activate /home/Desktop/de_report_gui/main.py
+Icon=/home/Desktop/de_report_gui/icon.JPG
+Terminal=true
+Type=Application
