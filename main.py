@@ -471,10 +471,13 @@ class RootWindow(tk.Frame):
     def onUserClose(self): 
         try:
             if messagebox.askokcancel('Disengagment GUI 2.0', "Are you sure you want to quit?\nYour work will be auto-saved.", parent=self.gifWindow):
-                self.saveUserInputs()
                 self.parent.destroy()
+                self.saveUserInputs()
         except:
+            self.parent.destroy()
             sys.exit()  # terminate from logGUI
+
+        #if cancel
 
 if __name__ == "__main__":
     streamFrm = []  # globally pass frames from LiveStream() to RecordGIF() threads
