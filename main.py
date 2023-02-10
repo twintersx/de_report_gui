@@ -475,9 +475,8 @@ class RootWindow(tk.Frame):
                 self.saveUserInputs()
         except:
             self.parent.destroy()
+            event.set() 
             sys.exit()  # terminate from logGUI
-
-        #if cancel
 
 if __name__ == "__main__":
     streamFrm = []  # globally pass frames from LiveStream() to RecordGIF() threads
