@@ -14,20 +14,6 @@ from threading import Lock, Thread, Event
 from time import sleep
 from itertools import count, cycle
 
-streamFrm = []  # globally pass frames from LiveStream() to RecordGIF() threads
-lock = Lock()   # Lock() prevents other threads from accessing a shared variable
-event = Event() # global variable needed to stop LiveStream thread from root.mainloop()
-
-with open('reports.csv', newline='') as csvfile:
-    headers = list(csv.reader(csvfile, delimiter=','))[0]
-dateIndex = headers.index("DATE")
-vinIndex = headers.index("VIN")
-roadIndex = headers.index('ROAD')
-latIndex = headers.index('LATITUDE')
-longIndex = headers.index('LONGITUDE')
-recFileIndex = headers.index('RECORDING FILE')
-descIndex = headers.index('DESCRIPTION')
-
 class RecordGif():
     def __init__(self, logButton):
         # Recording of GIF runs in thread to allow multiple recordings in the same timeframe, 
@@ -490,7 +476,21 @@ class RootWindow(tk.Frame):
         except:
             sys.exit()  # terminate from logGUI
 
-def main():
+if __name__ == "__main__":
+    streamFrm = []  # globally pass frames from LiveStream() to RecordGIF() threads
+    lock = Lock()   # Lock() prevents other threads from accessing a shared variable
+    event = Event() # global variable needed to stop LiveStream thread from root.mainloop()
+
+    with open('reports.csv', newline='') as csvfile:
+        headers = list(csv.reader(csvfile, delimiter=','))[0]
+    dateIndex = headers.index("DATE")
+    vinIndex = headers.index("VIN")
+    roadIndex = headers.index('ROAD')
+    latIndex = headers.index('LATITUDE')
+    longIndex = headers.index('LONGITUDE')
+    recFileIndex = headers.index('RECORDING FILE')
+    descIndex = headers.index('DESCRIPTION')
+
     root = tk.Tk()
     root.title('Disengagment GUI 2.0')
     root.resizable(False, False)
@@ -502,5 +502,4 @@ def main():
     LiveStream().stream_start
     root.mainloop()
 
-main()
 # --- END OF FILE --- #

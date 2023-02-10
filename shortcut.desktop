@@ -1,6 +1,6 @@
 [Desktop Entry]
-Name=Disengagment GUI
-Exec=/home/Desktop/de_report_gui/venv/bin/activate /home/Desktop/de_report_gui/main.py
-Icon=/home/Desktop/de_report_gui/icon.JPG
+Name=DE GUI
+Exec=/bin/bash -c 'cd /home/leaf/Desktop/de_report_gui;source /home/leaf/Desktop/de_report_gui/venv/bin/activate;python3 /home/leaf/Desktop/de_report_gui/main.py;read'
+Icon=/home/Desktop/de_report_gui/icon.jpg
 Terminal=true
 Type=Application
