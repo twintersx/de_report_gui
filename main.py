@@ -26,9 +26,10 @@ class RecordGif():
         self.recordTime = datetime.now()
         self.captureGPS()
         self.recordGIF()
+        self.logButton.config(text="RECORD\nDISENGAGMENT", bg='green')
         self.saveGIF()
         self.writeNewCSVRow()
-        self.logButton.config(text="RECORD\nDISENGAGMENT", bg='green')
+        
         return  # needed to end thread
 
     def captureGPS(self):
@@ -63,7 +64,7 @@ class RecordGif():
     def recordGIF(self):
         global streamFrm # used to access a variable across threads
         self.gifFileName = self.recordTime.strftime("%m%d%Y_%H%M%S") + '.gif'
-        tMinus15 = self.recordTime - timedelta(seconds=15)
+        tMinus15 = self.recordTime - timedelta(seconds=10)
         
         sleep(10)   # wait until LiveStream captures more stream frames
 
@@ -98,19 +99,18 @@ class RecordGif():
         newLog[recFileIndex] = self.gifFileName
         newLog[descIndex] = ''
 
-        with lock:
-            with open ('reports.csv', newline='') as csvfile:
-                reports = list(csv.reader(csvfile, delimiter=','))
+        with open ('reports.csv', newline='') as csvfile:
+            reports = list(csv.reader(csvfile, delimiter=','))
 
-            # removes empty lines if csv is manually edited outside of GUI
-            for row in list(reports):
-                if not row:
-                    reports.remove(row)
+        # removes empty lines if csv is manually edited outside of GUI
+        for row in list(reports):
+            if not row:
+                reports.remove(row)
 
-            reports.append(newLog)
-            with open('reports.csv', 'w', newline='') as csvfile:
-                writer = csv.writer(csvfile)
-                writer.writerows(reports)
+        reports.append(newLog)
+        with open('reports.csv', 'w', newline='') as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerows(reports)
 
 class LiveStream():
     def __init__(self):
@@ -471,8 +471,8 @@ class RootWindow(tk.Frame):
     def onUserClose(self): 
         try:
             if messagebox.askokcancel('Disengagment GUI 2.0', "Are you sure you want to quit?\nYour work will be auto-saved.", parent=self.gifWindow):
-                self.parent.destroy()
                 self.saveUserInputs()
+                self.parent.destroy()
         except:
             self.parent.destroy()
             event.set() 
