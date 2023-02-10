@@ -1,6 +1,7 @@
 # Custom inputs
 *.gif
 *.txt
+*.pptx
 
 recordings/*
 # exception to the rule

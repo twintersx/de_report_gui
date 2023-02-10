@@ -1,15 +1,31 @@
-import csv, os, sys, subprocess, cv2, imageio # pip install opencv-python | pip install imageio
+
+# pip install pillow, opencv-python, imageio, tkcalendar, tkintermapview 
+import csv, os, sys, subprocess, cv2, imageio 
 import tkinter as tk
 from tkinter import messagebox
 from tkinter import font as tkFont 
-from tkcalendar import Calendar # pip install tkcalendar
-from PIL import ImageTk, Image  # pip install pillow
+from tkcalendar import Calendar                
+from PIL import ImageTk, Image                  
 from datetime import datetime, date, timedelta
-from tkintermapview import TkinterMapView  # pip install tkintermapview
+from tkintermapview import TkinterMapView      
 from functools import partial
 from threading import Lock, Thread, Event
 from time import sleep
 from itertools import count, cycle
+
+streamFrm = []  # globally pass frames from LiveStream() to RecordGIF() threads
+lock = Lock()   # Lock() prevents other threads from accessing a shared variable
+event = Event() # global variable needed to stop LiveStream thread from root.mainloop()
+
+with open('reports.csv', newline='') as csvfile:
+    headers = list(csv.reader(csvfile, delimiter=','))[0]
+dateIndex = headers.index("DATE")
+vinIndex = headers.index("VIN")
+roadIndex = headers.index('ROAD')
+latIndex = headers.index('LATITUDE')
+longIndex = headers.index('LONGITUDE')
+recFileIndex = headers.index('RECORDING FILE')
+descIndex = headers.index('DESCRIPTION')
 
 class RecordGif():
     def __init__(self, logButton):
@@ -146,10 +162,6 @@ class RootWindow(tk.Frame):
         self.pad = 5
         self.initLogGUI()
 
-    def recordButtonFunc(self):
-        self.logButton.config(text='RECORDING...', bg='red')
-        RecordGif(self.logButton)
-
     def initLogGUI(self):
         self.logFrame = tk.Frame(self.parent)
         self.logFrame.pack(fill='both')
@@ -161,6 +173,10 @@ class RootWindow(tk.Frame):
         helv20 = tkFont.Font(family='Helvetica', size=20, weight='bold')
         endDriveButton = tk.Button(self.logFrame, text="END DRIVE", command=self.initReportGUI, bg='red', font=helv20)
         endDriveButton.pack(fill='both', padx=self.pad, pady=self.pad, side=tk.BOTTOM)
+
+    def recordButtonFunc(self):
+        self.logButton.config(text='RECORDING...', bg='red')
+        RecordGif(self.logButton)
 
     def initReportGUI(self):
         event.set() # stop recording stream thread
@@ -210,6 +226,11 @@ class RootWindow(tk.Frame):
 
     def initMapWidget(self):
         self.map_widget = TkinterMapView(self.mapFrame, width=850, height=850)
+
+    def initSave(self):
+        tk.Button(self.saveFrame, text='SAVE', command=self.saveUserInputs).pack(fill=tk.X)
+        self.saveText = tk.Text(self.saveFrame, width=5, height=2)
+        self.saveText.pack(fill=tk.X)
 
     def placeWindowRelRoot(self, window, dx, dy):
         x = self.parent.winfo_x()
@@ -460,11 +481,6 @@ class RootWindow(tk.Frame):
             writer.writerows(all_reports)
             self.saveText.insert('1.0', f"SAVED: {datetime.now().strftime('%H:%M:%S') }\n") #1.0 line 1 char 0
 
-    def initSave(self):
-        tk.Button(self.saveFrame, text='SAVE', command=self.saveUserInputs).pack(fill=tk.X)
-        self.saveText = tk.Text(self.saveFrame, width=5, height=2)
-        self.saveText.pack(fill=tk.X)
-
     def onUserClose(self): 
         try:
             if messagebox.askokcancel('Disengagment GUI 2.0', "Are you sure you want to quit?\nYour work will be auto-saved.", parent=self.gifWindow):
@@ -473,22 +489,7 @@ class RootWindow(tk.Frame):
         except:
             sys.exit()  # terminate from logGUI
 
-# ---------- MAIN ---------- #
-if __name__ == "__main__":
-    streamFrm = []  # globally pass frames from LiveStream() to RecordGIF() threads
-    lock = Lock()   # Lock() prevents other threads from accessing a shared variable
-    event = Event() # global variable needed to stop LiveStream thread from root.mainloop()
-
-    with open('reports.csv', newline='') as csvfile:
-        headers = list(csv.reader(csvfile, delimiter=','))[0]
-    dateIndex = headers.index("DATE")
-    vinIndex = headers.index("VIN")
-    roadIndex = headers.index('ROAD')
-    latIndex = headers.index('LATITUDE')
-    longIndex = headers.index('LONGITUDE')
-    recFileIndex = headers.index('RECORDING FILE')
-    descIndex = headers.index('DESCRIPTION')
-
+def main():
     root = tk.Tk()
     root.title('Disengagment GUI 2.0')
     root.resizable(False, False)
@@ -499,3 +500,6 @@ if __name__ == "__main__":
 
     LiveStream().stream_start
     root.mainloop()
+
+main()
+# --- END OF FILE --- #
