@@ -125,13 +125,13 @@ class LiveStream():
             with lock:  
                 streamFrm.append((datetime.now(), frame))
 
-            fps, buffer_limit_seconds = 0.33, 300
-            sleep(fps) 
+            fps, buffer_limit_seconds = 2, 300
+            sleep(1 / fps) 
 
-            if len(streamFrm) > fps * buffer_limit_seconds:
+            if len(streamFrm) > fps * buffer_limit_seconds: 
                 with lock:
                     # when buffer limit is reached, save only the last 20 seconds 
-                    streamFrm = streamFrm[(buffer_limit_seconds-20):]
+                    streamFrm = streamFrm[fps * (buffer_limit_seconds - 20):]
 
             # break from this while loop from root.mainloop() (stop recording once drive is done)
             if event.is_set():
