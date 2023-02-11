@@ -1,4 +1,4 @@
-# source /home/../de_report_gui/venv/bin/activate
+# source ~/de_report_gui/venv/bin/activate
 # pip3 install -U pip -U setuptools
 # pip install pillow opencv-python imageio tkcalendar tkintermapview 
 import csv, os, sys, subprocess, cv2, imageio 
@@ -476,7 +476,7 @@ class RootWindow(tk.Frame):
         except:
             self.parent.destroy()
             event.set() 
-            sys.exit()  # terminate from logGUI
+            sys.exit()  # end program from logGUI
 
 if __name__ == "__main__":
     streamFrm = []  # globally pass frames from LiveStream() to RecordGIF() threads
@@ -500,9 +500,9 @@ if __name__ == "__main__":
 
     rw = RootWindow(root)
     rw.pack(fill='both', expand=True)
-    root.protocol("WM_DELETE_WINDOW", rw.onUserClose)
+    root.protocol("WM_DELETE_WINDOW", rw.onUserClose)   # needed to handle root window closing by user
 
-    LiveStream().stream_start
+    LiveStream()
     root.mainloop()
 
 # --- END OF FILE --- #
