@@ -1,18 +1,4 @@
-# source ~/de_report_gui/venv/bin/activate
-# pip3 install -U pip -U setuptools
-# pip install pillow opencv-python imageio tkcalendar tkintermapview 
-import csv, os, sys, subprocess, cv2, imageio 
-import tkinter as tk
-from tkinter import messagebox
-from tkinter import font as tkFont 
-from tkcalendar import Calendar                
-from PIL import ImageTk, Image                  
-from datetime import datetime, date, timedelta
-from tkintermapview import TkinterMapView      
-from functools import partial
-from threading import Lock, Thread, Event
-from time import sleep
-from itertools import count, cycle
+from dependencies import *
 
 class RecordGif():
     def __init__(self, logButton):
@@ -30,19 +16,19 @@ class RecordGif():
         self.saveGIF()
         self.writeNewCSVRow()
         
-        return  # needed to end thread
+        return  # needed to terminate thread
 
     def captureGPS(self):
         # small chance GPS coordinates are not captured from ROS. 
         # retries up to 10 times but breaks early if successfull
-        path = os.path.join(os.getcwd(), 'ros.py')
+        path = path.join(getcwd(), inputs['ros_file'])
         n = 0
         while n < 10:
             try:
                 # need to run ROS python script outside of virtual enviorment with python2 (for ROS1)
                 # the script is executed in the systems root directory '/'
                 # the script terminal output is captured via stdout=subprocess.PIPE
-                proc = subprocess.Popen(['python2', path], cwd='/', stdout=subprocess.PIPE)
+                proc = Popen(['python2', path], cwd='/', stdout=PIPE)
 
                 # the output is captured and the coordinates are divided
                 output = proc.communicate()[0].decode()
@@ -75,32 +61,33 @@ class RecordGif():
                 self.gifFrames.append(data[1])
 
     def saveGIF(self):
-        recording_folder = os.path.join(os.getcwd(), 'recordings', self.gifFileName)
+        recording_folder = path.join(getcwd(), inputs['recording_folder'], self.gifFileName)
         # Saves group of frames as a .gif in "recordings" folder
-        with imageio.get_writer(recording_folder) as writer:
+        with get_writer(recording_folder) as io_writer:
             for f in self.gifFrames:
-                rgb_frame = cv2.cvtColor(f, cv2.COLOR_BGR2RGB)  # imageio needs RGB format
+                rgb_frame = cvtColor(f, COLOR_BGR2RGB)  # imageio needs RGB format
                 
                 # resize image to view easier in reporting window
                 scale_percent = 150
                 width = int(rgb_frame.shape[1] * scale_percent / 100)
                 height = int(rgb_frame.shape[0] * scale_percent / 100)
-                resized = cv2.resize(rgb_frame, (width, height), interpolation = cv2.INTER_AREA)
+                resized = resize(rgb_frame, (width, height), interpolation = INTER_AREA)
 
-                writer.append_data(resized)
+                io_writer.append_data(resized)
 
     def writeNewCSVRow(self):
         newLog = [None] * len(headers)
         newLog[dateIndex] = self.recordTime.strftime('%m/%d/%Y')
-        newLog[vinIndex] = '1N4AZ1CP7KC308251'
+        newLog[vehicleIndex] = inputs['vehicle_name']
+        newLog[vinIndex] = inputs['vehicle_vin']
         newLog[roadIndex] = ''
         newLog[latIndex] = self.latitude
         newLog[longIndex] = (-abs(self.longitude)) # force positive value from /gps_state to negative
         newLog[recFileIndex] = self.gifFileName
         newLog[descIndex] = ''
 
-        with open ('reports.csv', newline='') as csvfile:
-            reports = list(csv.reader(csvfile, delimiter=','))
+        with open (inputs['csv_file'], newline='') as csvfile:
+            reports = list(reader(csvfile, delimiter=','))
 
         # removes empty lines if csv is manually edited outside of GUI
         for row in list(reports):
@@ -108,9 +95,9 @@ class RecordGif():
                 reports.remove(row)
 
         reports.append(newLog)
-        with open('reports.csv', 'w', newline='') as csvfile:
-            writer = csv.writer(csvfile)
-            writer.writerows(reports)
+        with open(inputs['csv_file'], 'w', newline='') as csvfile:
+            csv_writer = writer(csvfile)
+            csv_writer.writerows(reports)
 
 class LiveStream():
     def __init__(self):
@@ -119,7 +106,7 @@ class LiveStream():
     def stream_start(self):
         global streamFrm
 
-        cap = cv2.VideoCapture(0)
+        cap = VideoCapture(0)
         while True:
             ret, frame = cap.read()
             with lock:  
@@ -138,28 +125,34 @@ class LiveStream():
                 break
 
         cap.release()               # Close the window / Release webcam
-        cv2.destroyAllWindows()     # De-allocate any associated memory usage
+        destroyAllWindows()     # De-allocate any associated memory usage
         return
 
-class RootWindow(tk.Frame):
+class RootWindow(Frame):
 # ---------- INITIALIZATION --------- #
     def __init__(self, parent):
-        tk.Frame.__init__(self, parent)
+        Frame.__init__(self, parent)
+        self.pack(fill='both', expand=True)
+
         self.parent = parent
+        self.parent.title('Disengagment GUI 2.0')
+        self.parent.resizable(False, False)
+        self.parent.protocol("WM_DELETE_WINDOW", self.onUserClose)   # needed to handle root window closing by user
+
         self.pad = 5
         self.initLogGUI()
 
     def initLogGUI(self):
-        self.logFrame = tk.Frame(self.parent)
+        self.logFrame = Frame(self.parent)
         self.logFrame.pack(fill='both')
         
-        helv36 = tkFont.Font(family='Helvetica', size=36, weight='bold')
-        self.logButton = tk.Button(self.logFrame, height=10, width=20, text="RECORD\nDISENGAGMENT", command=self.recordButtonFunc, bg='green', font=helv36) 
-        self.logButton.pack(fill='both', padx=self.pad, side=tk.TOP)
+        helv36 = font.Font(family='Helvetica', size=36, weight='bold')
+        self.logButton = Button(self.logFrame, height=10, width=20, text="RECORD\nDISENGAGMENT", command=self.recordButtonFunc, bg='green', font=helv36) 
+        self.logButton.pack(fill='both', padx=self.pad, side=TOP)
 
-        helv20 = tkFont.Font(family='Helvetica', size=20, weight='bold')
-        endDriveButton = tk.Button(self.logFrame, text="END DRIVE", command=self.initReportGUI, bg='red', font=helv20)
-        endDriveButton.pack(fill='both', padx=self.pad, pady=self.pad, side=tk.BOTTOM)
+        helv20 = font.Font(family='Helvetica', size=20, weight='bold')
+        endDriveButton = Button(self.logFrame, text="END DRIVE", command=self.initReportGUI, bg='red', font=helv20)
+        endDriveButton.pack(fill='both', padx=self.pad, pady=self.pad, side=BOTTOM)
 
     def recordButtonFunc(self):
         self.logButton.config(text='RECORDING...', bg='red')
@@ -174,38 +167,38 @@ class RootWindow(tk.Frame):
         self.initMapWidget()
         self.initMapPosition()
         self.initReportButtons()
-        self.initSave()
+        self.initSaveLog()
 
     def initFrames(self):   
-        self.mapFrame = tk.Frame(self.parent)
-        self.mapFrame.pack(side=tk.RIGHT, fill='both', padx=self.pad, pady=self.pad)
+        self.mapFrame = Frame(self.parent)
+        self.mapFrame.pack(side=RIGHT, fill='both', padx=self.pad, pady=self.pad)
         
-        self.controlFrame = tk.Frame(self.parent)
-        self.controlFrame.pack(fill='both', side=tk.LEFT, padx=self.pad, pady=self.pad)
+        self.controlFrame = Frame(self.parent)
+        self.controlFrame.pack(fill='both', side=LEFT, padx=self.pad, pady=self.pad)
 
-        self.calFrame = tk.Frame(self.controlFrame, height=20)
-        self.calFrame.pack(fill=tk.X, side=tk.TOP, padx=self.pad, pady=self.pad)
+        self.calFrame = Frame(self.controlFrame, height=20)
+        self.calFrame.pack(fill=X, side=TOP, padx=self.pad, pady=self.pad)
 
-        self.loadFrame = tk.Frame(self.controlFrame)
-        self.loadFrame.pack(fill=tk.X, side=tk.TOP, padx=self.pad, pady=self.pad)
+        self.loadFrame = Frame(self.controlFrame)
+        self.loadFrame.pack(fill=X, side=TOP, padx=self.pad, pady=self.pad)
 
-        self.reportButtonFrame = tk.Frame(self.controlFrame)
-        self.reportButtonFrame.pack(fill=tk.X, padx=self.pad, pady=self.pad)
+        self.reportButtonFrame = Frame(self.controlFrame)
+        self.reportButtonFrame.pack(fill=X, padx=self.pad, pady=self.pad)
 
-        self.userInputFrame = tk.Frame(self.controlFrame)
-        self.userInputFrame.pack(fill=tk.X, padx=self.pad, pady=self.pad)
+        self.userInputFrame = Frame(self.controlFrame)
+        self.userInputFrame.pack(fill=X, padx=self.pad, pady=self.pad)
 
-        self.saveFrame = tk.Frame(self.controlFrame)
-        self.saveFrame.pack(fill=tk.X, side=tk.BOTTOM, padx=self.pad, pady=self.pad)
+        self.saveFrame = Frame(self.controlFrame)
+        self.saveFrame.pack(fill=X, side=BOTTOM, padx=self.pad, pady=self.pad)
 
         # --- Top Level Window Initialization --- #
-        self.calWindow = tk.Toplevel()
+        self.calWindow = Toplevel()
         self.calWindow.protocol("WM_DELETE_WINDOW", self.calWindow.withdraw)
         self.calWindow.attributes('-topmost', True)
         self.calWindow.withdraw()
         self.calWindow.resizable(False, False)
 
-        self.gifWindow = tk.Toplevel()
+        self.gifWindow = Toplevel()
         self.gifWindow.protocol("WM_DELETE_WINDOW", self.gifWindow.withdraw)
         self.gifWindow.withdraw()
         self.gifWindow.attributes('-topmost', True)
@@ -214,10 +207,9 @@ class RootWindow(tk.Frame):
     def initMapWidget(self):
         self.map_widget = TkinterMapView(self.mapFrame, width=850, height=850)
 
-    def initSave(self):
-        tk.Button(self.saveFrame, text='SAVE', command=self.saveUserInputs).pack(fill=tk.X)
-        self.saveText = tk.Text(self.saveFrame, width=5, height=2)
-        self.saveText.pack(fill=tk.X)
+    def initSaveLog(self):
+        self.saveText = Text(self.saveFrame, width=5, height=2)
+        self.saveText.pack(fill=X)
 
     def placeWindowRelRoot(self, window, dx, dy):
         x = self.parent.winfo_x()
@@ -257,18 +249,18 @@ class RootWindow(tk.Frame):
         self.cal = Calendar(self.calWindow, selectmode='day', year=today.year, month=today.month, day=today.day, background='orange', foreground='white', borderwidth=2)
         self.cal.pack()
 
-        tk.Label(self.calFrame, text='DATE RANGE: ').pack(fill='both', side=tk.LEFT)
+        Label(self.calFrame, text='DATE RANGE: ').pack(fill='both', side=LEFT)
 
-        self.initalDateButton = tk.Button(self.calFrame, text=f"{today.strftime('%m/%d/%Y')}", command=self.setInitialDate)
-        self.initalDateButton.pack(fill='both', side=tk.LEFT) 
+        self.initalDateButton = Button(self.calFrame, text=f"{today.strftime('%m/%d/%Y')}", command=self.setInitialDate)
+        self.initalDateButton.pack(fill='both', side=LEFT) 
 
-        tk.Label(self.calFrame, text='-').pack(side=tk.LEFT)
+        Label(self.calFrame, text='-').pack(side=LEFT)
 
-        self.finalDateButton = tk.Button(self.calFrame, text=f"{today.strftime('%m/%d/%Y')}", command=self.setFinalDate)
-        self.finalDateButton.pack(fill='both', side=tk.LEFT) 
+        self.finalDateButton = Button(self.calFrame, text=f"{today.strftime('%m/%d/%Y')}", command=self.setFinalDate)
+        self.finalDateButton.pack(fill='both', side=LEFT) 
 
-        self.loadButton = tk.Button(self.loadFrame, text="RELOAD", command=self.onReloadClick)
-        self.loadButton.pack(fill=tk.X, side=tk.BOTTOM) 
+        self.loadButton = Button(self.loadFrame, text="RELOAD / SAVE", command=self.onReloadClick)
+        self.loadButton.pack(fill=X, side=BOTTOM) 
     
 # ---------- USER CONTROL FUNCTIONALITY ---------- #
     def onReloadClick(self):
@@ -279,9 +271,9 @@ class RootWindow(tk.Frame):
 
     def setDateReport(self):
         self.dateRangeReports = []
-        with open('reports.csv', newline='') as csvfile:
-            reader = list(csv.reader(csvfile, delimiter=','))
-            for row in reader[1:]:
+        with open(inputs['csv_file'], newline='') as csvfile:
+            reports = list(reader(csvfile, delimiter=','))
+            for row in reports[1:]:
                 report_date = datetime.strptime(row[dateIndex], '%m/%d/%Y')
                 if self.initialDate.date() <= report_date.date() <= self.finalDate.date():   # need to set initial date to start of day and final date to end of day
                     self.dateRangeReports.append(row)
@@ -345,8 +337,8 @@ class RootWindow(tk.Frame):
         self.placeWindowRelRoot(self.gifWindow, 550, 0)
         self.gifWindow.title(self.attributes[i]['title'])
 
-        gifPath = os.path.join(os.getcwd(), 'recordings', self.attributes[i]['gifFile'])
-        self.gifFrame = tk.Label(self.gifWindow)
+        gifPath = path.join(getcwd(), inputs['recording_folder'], self.attributes[i]['gifFile'])
+        self.gifFrame = Label(self.gifWindow)
         self.gifFrame.pack()
 
         if isinstance(gifPath, str):
@@ -384,8 +376,8 @@ class RootWindow(tk.Frame):
         self.gifWindow.withdraw()
         self.map_widget.delete_all_marker()  
 
-        helv10 = tkFont.Font(family='Helvetica', size=12, weight='bold')
-        tk.Label(self.reportButtonFrame, text="DISENGAGMENT LIST", font=helv10).pack(pady=(20, 0))
+        helv10 = font.Font(family='Helvetica', size=12, weight='bold')
+        Label(self.reportButtonFrame, text="DISENGAGMENT LIST", font=helv10).pack(pady=(20, 0))
 
         self.attributes = []
         for i, row in enumerate(self.dateRangeReports):
@@ -396,15 +388,15 @@ class RootWindow(tk.Frame):
             formatRecDate = datetime.strftime(recDateObj, '%m/%d/%Y %H:%M:%S')
             title = f"{str(formatRecDate)} \n({lat}, {long})"
               
-            descBox = tk.Text(self.userInputFrame, width=5, height=5) 
+            descBox = Text(self.userInputFrame, width=5, height=5) 
             descBox.insert('1.0', row[descIndex])
-            road_type = tk.StringVar(value=row[roadIndex])
-            radio1 = tk.Radiobutton(self.userInputFrame, text='Highway', value='Highway', variable=road_type)
-            radio2 = tk.Radiobutton(self.userInputFrame, text='Street', value='Street', variable=road_type)
+            road_type = StringVar(value=row[roadIndex])
+            radio1 = Radiobutton(self.userInputFrame, text='Highway', value='Highway', variable=road_type)
+            radio2 = Radiobutton(self.userInputFrame, text='Street', value='Street', variable=road_type)
 
             marker = self.map_widget.set_marker(lat, long, marker_color_circle = 'dark green', marker_color_outside = 'green', command=partial(self.disengagmentFocus, i),)
 
-            reportButton = tk.Button(self.reportButtonFrame, text=title, command=partial(self.disengagmentFocus, i, None))
+            reportButton = Button(self.reportButtonFrame, text=title, command=partial(self.disengagmentFocus, i, None))
             reportButton.pack(fill='both', padx=self.pad, pady=self.pad) 
 
             attrib_dict = {
@@ -435,26 +427,26 @@ class RootWindow(tk.Frame):
     def initInputWidgets(self, i):
         self.clearWidgets(self.userInputFrame, 'hide') 
 
-        tk.Label(self.userInputFrame, text="DESCRIPTION OF REASON FOR DISENGAGMENT").pack()
+        Label(self.userInputFrame, text="DESCRIPTION OF REASON FOR DISENGAGMENT").pack()
         self.attributes[i]['descBox'].config(highlightthickness=3, highlightbackground = "red", highlightcolor='red')
-        self.attributes[i]['descBox'].pack(fill=tk.X)
+        self.attributes[i]['descBox'].pack(fill=X)
 
-        tk.Label(self.userInputFrame, text="SELECT ROAD TYPE: ").pack(side=tk.LEFT)
-        self.attributes[i]['radio1'].pack(side=tk.RIGHT)
-        self.attributes[i]['radio2'].pack(side=tk.RIGHT)
+        Label(self.userInputFrame, text="SELECT ROAD TYPE: ").pack(side=LEFT)
+        self.attributes[i]['radio1'].pack(side=RIGHT)
+        self.attributes[i]['radio2'].pack(side=RIGHT)
 
     def saveUserInputs(self):
-        with open('reports.csv', newline='') as csvfile:
-            all_reports = list(csv.reader(csvfile, delimiter=',')) 
+        with open(inputs['csv_file'], newline='') as csvfile:
+            reports = list(reader(csvfile, delimiter=',')) 
 
-        for row in all_reports[1:]:   # skip headers
+        for row in reports[1:]:   # skip headers
             for attrib in self.attributes:                       
                 if attrib['gifFile'] == row[recFileIndex]:
                     try:
                         road_type = attrib['road_type'].get()
                         row[roadIndex] = road_type
                         
-                        description = attrib['descBox'].get("1.0", tk.END) 
+                        description = attrib['descBox'].get("1.0", END) 
                         description = description.replace('\n', '')
                         row[descIndex] = description       
                     except:
@@ -462,9 +454,9 @@ class RootWindow(tk.Frame):
 
                     break
 
-        with open('reports.csv', 'w', newline='') as csvfile:
-            writer = csv.writer(csvfile)
-            writer.writerows(all_reports)
+        with open(inputs['csv_file'], 'w', newline='') as csvfile:
+            csv_writer = writer(csvfile)
+            csv_writer.writerows(reports)
             
         self.saveText.insert('1.0', f"SAVED: {datetime.now().strftime('%H:%M:%S') }\n") #1.0 line 1 char 0
 
@@ -476,33 +468,13 @@ class RootWindow(tk.Frame):
         except:
             self.parent.destroy()
             event.set() 
-            sys.exit()  # end program from logGUI
+            exit()  # end program from logGUI
 
-if __name__ == "__main__":
-    streamFrm = []  # globally pass frames from LiveStream() to RecordGIF() threads
-    lock = Lock()   # Lock() prevents other threads from accessing a shared variable
-    event = Event() # global variable needed to stop LiveStream thread from root.mainloop()
-
-    #DATE,VIN,ROAD,LATITUDE,LONGITUDE,RECORDING FILE,DESCRIPTION
-    with open('reports.csv', newline='') as csvfile:
-        headers = list(csv.reader(csvfile, delimiter=','))[0]
-    dateIndex = headers.index("DATE")
-    vinIndex = headers.index("VIN")
-    roadIndex = headers.index('ROAD')
-    latIndex = headers.index('LATITUDE')
-    longIndex = headers.index('LONGITUDE')
-    recFileIndex = headers.index('RECORDING FILE')
-    descIndex = headers.index('DESCRIPTION')
-
-    root = tk.Tk()
-    root.title('Disengagment GUI 2.0')
-    root.resizable(False, False)
-
-    rw = RootWindow(root)
-    rw.pack(fill='both', expand=True)
-    root.protocol("WM_DELETE_WINDOW", rw.onUserClose)   # needed to handle root window closing by user
-
+def main():
     LiveStream()
+
+    root = Tk()
+    RootWindow(root)
     root.mainloop()
 
-# --- END OF FILE --- #
+main()

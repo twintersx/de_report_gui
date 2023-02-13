@@ -3,7 +3,6 @@
 *.txt
 *.pptx
 *.mp4
-reports.csv
 recordings/*
 # exception to the rule
 !recordings/.gitkeep 

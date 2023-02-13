@@ -32,6 +32,7 @@ DONE: reduce frames per second on video recordings and fix fps equations for buf
 
 create a dependency file that has all things you can change easily. This includes vehicle name, vin, path directories, etc
 work on a scroll bar for many disengagments.  
+add new coloumn with vehicle name
 
 Notes:
 created venv: https://www.freecodecamp.org/news/how-to-setup-virtual-environments-in-python/
