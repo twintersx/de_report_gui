@@ -12,23 +12,20 @@ class RecordGif():
         self.recordTime = datetime.now()
         self.captureGPS()
         self.recordGIF()
-        self.logButton.config(text="RECORD\nDISENGAGMENT", bg='green')
         self.saveGIF()
         self.writeNewCSVRow()
-        
         return  # needed to terminate thread
 
     def captureGPS(self):
         # small chance GPS coordinates are not captured from ROS. 
         # retries up to 10 times but breaks early if successfull
-        path = path.join(getcwd(), inputs['ros_file'])
         n = 0
         while n < 10:
             try:
                 # need to run ROS python script outside of virtual enviorment with python2 (for ROS1)
                 # the script is executed in the systems root directory '/'
                 # the script terminal output is captured via stdout=subprocess.PIPE
-                proc = Popen(['python2', path], cwd='/', stdout=PIPE)
+                proc = Popen(['python2', VARIABLES['ros_py_path']], cwd='/', stdout=PIPE)
 
                 # the output is captured and the coordinates are divided
                 output = proc.communicate()[0].decode()
@@ -36,8 +33,7 @@ class RecordGif():
 
                 # if 1st row of "coordinates" is not split by unqiue delimiter or a number, an exception is raised and the loop retries
                 self.latitude, self.longitude = coordinates.split('abc123xyz')  # this delimiter is set in the de_gui_ros.py script 
-                self.latitude = float(self.latitude)
-                self.longitude = float(self.longitude)
+                self.latitude, self.longitude = float(self.latitude), float(self.longitude)
             except:
                 n += 1
                 continue 
@@ -45,7 +41,8 @@ class RecordGif():
             # No exception was raised, continue to recordGIF()
             return
         
-        print("\nNot able to capture GPS coordinates from ROS.\nHas a GPS LOCK been established?\n")
+        self.latitude, self.longitude = 0, 0
+        print("Not able to capture GPS coordinates from ROS.\nHas a GPS LOCK been established?")
 
     def recordGIF(self):
         global streamFrm # used to access a variable across threads
@@ -60,10 +57,17 @@ class RecordGif():
             if data[0] >= tMinus15:
                 self.gifFrames.append(data[1])
 
+        # notify driver recording has finished
+        try:
+            self.logButton.config(text="RECORD\nDISENGAGMENT", bg='green')
+        except:
+            # Condition if "End Drive" button is pressed during recording since self.logbutton no longer exists
+            pass
+
     def saveGIF(self):
-        recording_folder = path.join(getcwd(), inputs['recording_folder'], self.gifFileName)
+        recording_path = path.join(VARIABLES['recordings_path'], self.gifFileName)
         # Saves group of frames as a .gif in "recordings" folder
-        with get_writer(recording_folder) as io_writer:
+        with get_writer(recording_path) as io_writer:
             for f in self.gifFrames:
                 rgb_frame = cvtColor(f, COLOR_BGR2RGB)  # imageio needs RGB format
                 
@@ -78,15 +82,15 @@ class RecordGif():
     def writeNewCSVRow(self):
         newLog = [None] * len(headers)
         newLog[dateIndex] = self.recordTime.strftime('%m/%d/%Y')
-        newLog[vehicleIndex] = inputs['vehicle_name']
-        newLog[vinIndex] = inputs['vehicle_vin']
+        newLog[vehicleIndex] = VARIABLES['vehicle_name']
+        newLog[vinIndex] = VARIABLES['vehicle_vin']
         newLog[roadIndex] = ''
         newLog[latIndex] = self.latitude
         newLog[longIndex] = (-abs(self.longitude)) # force positive value from /gps_state to negative
         newLog[recFileIndex] = self.gifFileName
         newLog[descIndex] = ''
 
-        with open (inputs['csv_file'], newline='') as csvfile:
+        with open (VARIABLES['csv_path'], newline='') as csvfile:
             reports = list(reader(csvfile, delimiter=','))
 
         # removes empty lines if csv is manually edited outside of GUI
@@ -95,7 +99,7 @@ class RecordGif():
                 reports.remove(row)
 
         reports.append(newLog)
-        with open(inputs['csv_file'], 'w', newline='') as csvfile:
+        with open(VARIABLES['csv_path'], 'w', newline='') as csvfile:
             csv_writer = writer(csvfile)
             csv_writer.writerows(reports)
 
@@ -131,15 +135,13 @@ class LiveStream():
 class RootWindow(Frame):
 # ---------- INITIALIZATION --------- #
     def __init__(self, parent):
-        Frame.__init__(self, parent)
+        Frame.__init__(self, parent)    # initalizes parent class "Frame"
         self.pack(fill='both', expand=True)
-
         self.parent = parent
         self.parent.title('Disengagment GUI 2.0')
         self.parent.resizable(False, False)
         self.parent.protocol("WM_DELETE_WINDOW", self.onUserClose)   # needed to handle root window closing by user
-
-        self.pad = 5
+        self.pad = 5                    # spacing between widgets
         self.initLogGUI()
 
     def initLogGUI(self):
@@ -160,12 +162,10 @@ class RootWindow(Frame):
 
     def initReportGUI(self):
         event.set() # stop recording stream thread
-        self.logFrame.destroy()
+        self.logFrame.destroy() 
         self.initFrames()
         self.initCalendar()
-        self.setDateReport()
-        self.initMapWidget()
-        self.initMapPosition()
+        self.initMap()
         self.initReportButtons()
         self.initSaveLog()
 
@@ -204,14 +204,37 @@ class RootWindow(Frame):
         self.gifWindow.attributes('-topmost', True)
         self.gifWindow.resizable(False, False)
 
-    def initMapWidget(self):
+    def initCalendar(self):
+        today = date.today()
+        self.initialDate, self.finalDate = datetime.today(), datetime.today()
+        self.cal = Calendar(self.calWindow, selectmode='day', year=today.year, month=today.month, day=today.day, background='orange', foreground='white', borderwidth=2)
+        self.cal.pack()
+
+        Label(self.calFrame, text='DATE RANGE: ').pack(fill='both', side=LEFT)
+
+        self.initalDateButton = Button(self.calFrame, text=f"{today.strftime('%m/%d/%Y')}", command=self.setInitialDate)
+        self.initalDateButton.pack(fill='both', side=LEFT) 
+
+        Label(self.calFrame, text='-').pack(side=LEFT)
+
+        self.finalDateButton = Button(self.calFrame, text=f"{today.strftime('%m/%d/%Y')}", command=self.setFinalDate)
+        self.finalDateButton.pack(fill='both', side=LEFT) 
+
+        self.loadButton = Button(self.loadFrame, text="RELOAD / SAVE", command=self.onReloadClick)
+        self.loadButton.pack(fill=X, side=BOTTOM) 
+
+        self.setDateReport()
+    
+    def initMap(self):
         self.map_widget = TkinterMapView(self.mapFrame, width=850, height=850)
+        self.setMapPosition()
 
     def initSaveLog(self):
         self.saveText = Text(self.saveFrame, width=5, height=2)
         self.saveText.pack(fill=X)
 
     def placeWindowRelRoot(self, window, dx, dy):
+        # Places a TopLevel Widget in reference to root window
         x = self.parent.winfo_x()
         y = self.parent.winfo_y()
         window.geometry("+%d+%d" % (x + dx, y + dy))
@@ -242,38 +265,19 @@ class RootWindow(Frame):
         self.calWindow.deiconify()
         self.initDate = self.cal.get_date()
         self.calWindow.bind('<Button-1>', self.closeFinalCal)
-
-    def initCalendar(self):
-        today = date.today()
-        self.initialDate, self.finalDate = datetime.today(), datetime.today()
-        self.cal = Calendar(self.calWindow, selectmode='day', year=today.year, month=today.month, day=today.day, background='orange', foreground='white', borderwidth=2)
-        self.cal.pack()
-
-        Label(self.calFrame, text='DATE RANGE: ').pack(fill='both', side=LEFT)
-
-        self.initalDateButton = Button(self.calFrame, text=f"{today.strftime('%m/%d/%Y')}", command=self.setInitialDate)
-        self.initalDateButton.pack(fill='both', side=LEFT) 
-
-        Label(self.calFrame, text='-').pack(side=LEFT)
-
-        self.finalDateButton = Button(self.calFrame, text=f"{today.strftime('%m/%d/%Y')}", command=self.setFinalDate)
-        self.finalDateButton.pack(fill='both', side=LEFT) 
-
-        self.loadButton = Button(self.loadFrame, text="RELOAD / SAVE", command=self.onReloadClick)
-        self.loadButton.pack(fill=X, side=BOTTOM) 
     
 # ---------- USER CONTROL FUNCTIONALITY ---------- #
     def onReloadClick(self):
         self.saveUserInputs()
         self.setDateReport()
-        self.initMapPosition()
+        self.setMapPosition()
         self.initReportButtons()
 
     def setDateReport(self):
         self.dateRangeReports = []
-        with open(inputs['csv_file'], newline='') as csvfile:
-            reports = list(reader(csvfile, delimiter=','))
-            for row in reports[1:]:
+        with open(VARIABLES['csv_path'], newline='') as csvfile:
+            self.reports = list(reader(csvfile, delimiter=','))
+            for row in self.reports[1:]:
                 report_date = datetime.strptime(row[dateIndex], '%m/%d/%Y')
                 if self.initialDate.date() <= report_date.date() <= self.finalDate.date():   # need to set initial date to start of day and final date to end of day
                     self.dateRangeReports.append(row)
@@ -285,7 +289,7 @@ class RootWindow(Frame):
             self.attributes[i]['long'])
         self.map_widget.set_zoom(self.attributes[i]['zoom'])
     
-    def initMapPosition(self):
+    def setMapPosition(self):
         # at least one report
         if len(self.dateRangeReports) >= 1:
             lats, longs = [], []
@@ -337,12 +341,12 @@ class RootWindow(Frame):
         self.placeWindowRelRoot(self.gifWindow, 550, 0)
         self.gifWindow.title(self.attributes[i]['title'])
 
-        gifPath = path.join(getcwd(), inputs['recording_folder'], self.attributes[i]['gifFile'])
+        gif_path = path.join(VARIABLES['recordings_path'], self.attributes[i]['gifFile'])
         self.gifFrame = Label(self.gifWindow)
         self.gifFrame.pack()
 
-        if isinstance(gifPath, str):
-            img = Image.open(gifPath)
+        if isinstance(gif_path, str):
+            img = Image.open(gif_path)
 
         frames = []
         self.frames = cycle(frames)
@@ -376,7 +380,7 @@ class RootWindow(Frame):
         self.gifWindow.withdraw()
         self.map_widget.delete_all_marker()  
 
-        helv10 = font.Font(family='Helvetica', size=12, weight='bold')
+        helv10 = font.Font(family='Helvetica', size=10, slant='italic')
         Label(self.reportButtonFrame, text="DISENGAGMENT LIST", font=helv10).pack(pady=(20, 0))
 
         self.attributes = []
@@ -436,10 +440,10 @@ class RootWindow(Frame):
         self.attributes[i]['radio2'].pack(side=RIGHT)
 
     def saveUserInputs(self):
-        with open(inputs['csv_file'], newline='') as csvfile:
-            reports = list(reader(csvfile, delimiter=',')) 
+        with open(VARIABLES['csv_path'], newline='') as csvfile:
+            self.reports = list(reader(csvfile, delimiter=','))
 
-        for row in reports[1:]:   # skip headers
+        for row in self.reports[1:]:   # skip headers
             for attrib in self.attributes:                       
                 if attrib['gifFile'] == row[recFileIndex]:
                     try:
@@ -449,14 +453,14 @@ class RootWindow(Frame):
                         description = attrib['descBox'].get("1.0", END) 
                         description = description.replace('\n', '')
                         row[descIndex] = description       
-                    except:
+                    except Exception as e:
+                        print(e)
                         pass
-
                     break
 
-        with open(inputs['csv_file'], 'w', newline='') as csvfile:
+        with open(VARIABLES['csv_path'], 'w', newline='') as csvfile:
             csv_writer = writer(csvfile)
-            csv_writer.writerows(reports)
+            csv_writer.writerows(self.reports)
             
         self.saveText.insert('1.0', f"SAVED: {datetime.now().strftime('%H:%M:%S') }\n") #1.0 line 1 char 0
 
@@ -472,9 +476,9 @@ class RootWindow(Frame):
 
 def main():
     LiveStream()
-
     root = Tk()
     RootWindow(root)
     root.mainloop()
-
 main()
+
+# --- END OF FILE --- #

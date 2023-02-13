@@ -29,10 +29,11 @@ DONE: Make csv more reliable, resize gif and fix close not saving to csv error
 DONE: make GPS coord when you press log, not after video is done recording
 DONE: make a shortcut on ubuntu desktop
 DONE: reduce frames per second on video recordings and fix fps equations for buffer limit
+DONE: create a dependency file that has all things you can change easily. This includes vehicle name, vin, path directories, etc
 
-create a dependency file that has all things you can change easily. This includes vehicle name, vin, path directories, etc
+
 work on a scroll bar for many disengagments.  
-add new coloumn with vehicle name
+
 
 Notes:
 created venv: https://www.freecodecamp.org/news/how-to-setup-virtual-environments-in-python/

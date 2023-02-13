@@ -17,20 +17,23 @@ from PIL import ImageTk, Image
 from datetime import datetime, date, timedelta      
 from time import sleep
 
-inputs = {
+# VEHICLE VARIABLES
+VARIABLES = {
     'vehicle_name': 'Bravo',
     'vehicle_vin': '1N4AZ1CP7KC308251',
-    'csv_file': 'de_reports.csv',
-    'recording_folder': 'recordings',
-    'ros_file': 'ros.py'
+    'csv_path': path.join(getcwd(), 'reports.csv'),
+    'recordings_path': path.join(getcwd(), 'recordings'),
+    'ros_py_path': path.join(getcwd(), 'ros.py')
 }
 
+# THREADING
 streamFrm = []  # globally pass frames from LiveStream() to RecordGIF() threads
 lock = Lock()   # Lock() prevents other threads from accessing a shared variable
 event = Event() # global variable needed to stop LiveStream thread from root.mainloop()
 
+# DEFINE CSV HEADERS
 #DATE,VEHICLE,VIN,ROAD,LATITUDE,LONGITUDE,RECORDING FILE,DESCRIPTION
-with open(inputs['csv_file'], newline='') as csvfile:
+with open(VARIABLES['csv_path'], newline='') as csvfile:
     headers = list(reader(csvfile, delimiter=','))[0]
 dateIndex = headers.index("DATE")
 vehicleIndex = headers.index("VEHICLE")
