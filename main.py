@@ -46,7 +46,7 @@ class RecordGif():
 
     def recordGIF(self):
         global streamFrm # used to access a variable across threads
-        self.gifFileName = self.recordTime.strftime("%m%d%Y_%H%M%S") + '.gif'
+        self.gif_file_name = self.recordTime.strftime("%m%d%Y_%H%M%S") + '.gif'
         tMinus15 = self.recordTime - timedelta(seconds=10)
         
         sleep(10)   # wait until LiveStream captures more stream frames
@@ -65,7 +65,7 @@ class RecordGif():
             pass
 
     def saveGIF(self):
-        recording_path = path.join(VARIABLES['recordings_path'], self.gifFileName)
+        recording_path = path.join(VARIABLES['recordings_path'], self.gif_file_name)
         # Saves group of frames as a .gif in "recordings" folder
         with get_writer(recording_path) as io_writer:
             for f in self.gifFrames:
@@ -87,7 +87,7 @@ class RecordGif():
         newLog[roadIndex] = ''
         newLog[latIndex] = self.latitude
         newLog[longIndex] = (-abs(self.longitude)) # force positive value from /gps_state to negative
-        newLog[recFileIndex] = self.gifFileName
+        newLog[recFileIndex] = self.gif_file_name
         newLog[descIndex] = ''
 
         with open (VARIABLES['csv_path'], newline='') as csvfile:
@@ -212,13 +212,21 @@ class RootWindow(Frame):
 
         Label(self.calFrame, text='DATE RANGE: ').pack(fill='both', side=LEFT)
 
-        self.initalDateButton = Button(self.calFrame, text=f"{today.strftime('%m/%d/%Y')}", command=self.setInitialDate)
+        self.initalDateButton = Button(
+            self.calFrame, 
+            text=f"{today.strftime('%m/%d/%Y')}", 
+            command=partial(self.initDateButton, "Set Inital Date", 0)) # need index to specify button
         self.initalDateButton.pack(fill='both', side=LEFT) 
 
         Label(self.calFrame, text='-').pack(side=LEFT)
 
-        self.finalDateButton = Button(self.calFrame, text=f"{today.strftime('%m/%d/%Y')}", command=self.setFinalDate)
+        self.finalDateButton = Button(
+            self.calFrame, 
+            text=f"{today.strftime('%m/%d/%Y')}", 
+            command=partial(self.initDateButton, "Set Final Date", 1))
         self.finalDateButton.pack(fill='both', side=LEFT) 
+
+        self.date_buttons = [self.initalDateButton, self.finalDateButton]
 
         self.loadButton = Button(self.loadFrame, text="RELOAD / SAVE", command=self.onReloadClick)
         self.loadButton.pack(fill=X, side=BOTTOM) 
@@ -240,35 +248,22 @@ class RootWindow(Frame):
         window.geometry("+%d+%d" % (x + dx, y + dy))
     
 # ---------- CALENDAR ---------- #
-    def closeInitialCal(self, event):
-        if self.cal.get_date() != self.initDate:
-            self.initialDate = datetime.strptime(self.cal.get_date(), '%m/%d/%y')
-            self.initalDateButton.config(text=self.initialDate.strftime('%m/%d/%Y'))
+    def closeCal(self, index, event):   # if selected date is different than current date
+        if self.cal.get_date() != self.initDate:    
+            self.newDate = datetime.strptime(self.cal.get_date(), '%m/%d/%y')
+            self.date_buttons[index].config(text=self.newDate.strftime('%m/%d/%Y'))
             self.calWindow.withdraw()
 
-    def closeFinalCal(self, event):
-        if self.cal.get_date() != self.initDate:
-            self.finalDate = datetime.strptime(self.cal.get_date(), '%m/%d/%y')
-            self.finalDateButton.config(text=self.finalDate.strftime('%m/%d/%Y'))
-            self.calWindow.withdraw()
-
-    def setInitialDate(self):
-        self.placeWindowRelRoot(self.calWindow, 0, 110)
-        self.calWindow.title("Set Inital Date")
-        self.calWindow.deiconify()
+    def initDateButton(self, title, index):
         self.initDate = self.cal.get_date()
-        self.calWindow.bind('<Button-1>', self.closeInitialCal)
-
-    def setFinalDate(self):
         self.placeWindowRelRoot(self.calWindow, 0, 110)
-        self.calWindow.title("Set Final Date")
+        self.calWindow.title(title)
         self.calWindow.deiconify()
-        self.initDate = self.cal.get_date()
-        self.calWindow.bind('<Button-1>', self.closeFinalCal)
+        self.calWindow.bind('<Button-1>', partial(self.closeCal, index))
     
 # ---------- USER CONTROL FUNCTIONALITY ---------- #
     def onReloadClick(self):
-        self.saveUserInputs()
+        self.saveUserInputs()   # must be first to execute
         self.setDateReport()
         self.setMapPosition()
         self.initReportButtons()
@@ -279,7 +274,7 @@ class RootWindow(Frame):
             self.reports = list(reader(csvfile, delimiter=','))
             for row in self.reports[1:]:
                 report_date = datetime.strptime(row[dateIndex], '%m/%d/%Y')
-                if self.initialDate.date() <= report_date.date() <= self.finalDate.date():   # need to set initial date to start of day and final date to end of day
+                if self.initialDate.date() <= report_date.date() <= self.finalDate.date(): # simplify to date not datetime.
                     self.dateRangeReports.append(row)
 
     def changeMapPosition(self, i):
@@ -307,18 +302,13 @@ class RootWindow(Frame):
         self.map_widget.set_zoom(14)
         self.map_widget.pack(fill='both')
 
-    def clickMarker(self, i):
-        if self.attributes[i]['marker'].image_hidden is True:
-            self.attributes[i]['marker'].hide_image(False)
-        else:
-            self.attributes[i]['marker'].hide_image(True)
-
     def highlightButton(self, i):
-        buttons = [*range(0, len(self.attributes))]
+        buttons = [*range(0, len(self.attributes))] # create list of numbers from 0 to len attributes
         for b in buttons:
+            # need to delete and recreate all non selected markers and buttons
             if b == i:
                 self.attributes[i]['button'].config(bg='red')
-                self.attributes[i]['marker'].delete()
+                self.attributes[i]['marker'].delete()   # deletes self green marker and then recreates itself as red
                 self.attributes[i]['marker'] = self.map_widget.set_marker(
                     self.attributes[i]['lat'], 
                     self.attributes[i]['long'], 
@@ -341,12 +331,15 @@ class RootWindow(Frame):
         self.placeWindowRelRoot(self.gifWindow, 550, 0)
         self.gifWindow.title(self.attributes[i]['title'])
 
-        gif_path = path.join(VARIABLES['recordings_path'], self.attributes[i]['gifFile'])
         self.gifFrame = Label(self.gifWindow)
         self.gifFrame.pack()
+        gif_path = path.join(VARIABLES['recordings_path'], self.attributes[i]['gif_file'])
 
-        if isinstance(gif_path, str):
+        if path.exists(gif_path):
             img = Image.open(gif_path)
+        else:
+            print(f"Recording {self.attributes[i]['gif_file']} not found.")
+            return
 
         frames = []
         self.frames = cycle(frames)
@@ -371,7 +364,6 @@ class RootWindow(Frame):
         self.changeMapPosition(i)
         self.initInputWidgets(i)
         self.highlightButton(i)
-        self.clickMarker(i)
         self.displayGif(i)
 
     def initReportButtons(self):
@@ -387,8 +379,8 @@ class RootWindow(Frame):
         for i, row in enumerate(self.dateRangeReports):
             lat, long = float(row[latIndex]), float(row[longIndex])
 
-            gifFile = row[recFileIndex]
-            recDateObj = datetime.strptime(gifFile.split('.')[0], '%m%d%Y_%H%M%S')
+            gif_file = row[recFileIndex]
+            recDateObj = datetime.strptime(gif_file.split('.')[0], '%m%d%Y_%H%M%S')
             formatRecDate = datetime.strftime(recDateObj, '%m/%d/%Y %H:%M:%S')
             title = f"{str(formatRecDate)} \n({lat}, {long})"
               
@@ -410,7 +402,7 @@ class RootWindow(Frame):
                 'lat': lat,
                 'long': long,
                 'zoom': 16,
-                'gifFile': gifFile,
+                'gif_file': gif_file,
                 'descBox': descBox,
                 'title': title,
                 'road_type': road_type,
@@ -445,17 +437,13 @@ class RootWindow(Frame):
 
         for row in self.reports[1:]:   # skip headers
             for attrib in self.attributes:                       
-                if attrib['gifFile'] == row[recFileIndex]:
-                    try:
-                        road_type = attrib['road_type'].get()
-                        row[roadIndex] = road_type
-                        
-                        description = attrib['descBox'].get("1.0", END) 
-                        description = description.replace('\n', '')
-                        row[descIndex] = description       
-                    except Exception as e:
-                        print(e)
-                        pass
+                if attrib['gif_file'] == row[recFileIndex]:
+                    road_type = attrib['road_type'].get()
+                    row[roadIndex] = road_type
+                    
+                    description = attrib['descBox'].get("1.0", END) 
+                    description = description.replace('\n', '')
+                    row[descIndex] = description       
                     break
 
         with open(VARIABLES['csv_path'], 'w', newline='') as csvfile:
@@ -469,9 +457,9 @@ class RootWindow(Frame):
             if messagebox.askokcancel('Disengagment GUI 2.0', "Are you sure you want to quit?\nYour work will be auto-saved.", parent=self.gifWindow):
                 self.saveUserInputs()
                 self.parent.destroy()
-        except:
-            self.parent.destroy()
-            event.set() 
+
+        except: # try will fail if closing program from inital log button window
+            event.set() # stop streaming thread on close
             exit()  # end program from logGUI
 
 def main():
