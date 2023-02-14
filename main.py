@@ -453,20 +453,22 @@ class RootWindow(Frame):
         self.saveText.insert('1.0', f"SAVED: {datetime.now().strftime('%H:%M:%S') }\n") #1.0 line 1 char 0
 
     def onUserClose(self): 
-        try:
+        try:    #try will fail if self.gifWindow not defined yet (in initial logging window)
             if messagebox.askokcancel('Disengagment GUI 2.0', "Are you sure you want to quit?\nYour work will be auto-saved.", parent=self.gifWindow):
                 self.saveUserInputs()
-                self.parent.destroy()
+                event.set() # stop streaming thread on close   
+                exit()  # exit program
 
-        except: # try will fail if closing program from inital log button window
-            event.set() # stop streaming thread on close
-            exit()  # end program from logGUI
+        except: 
+            event.set() # stop streaming thread on close   
+            exit()
 
 def main():
     LiveStream()
     root = Tk()
     RootWindow(root)
     root.mainloop()
+    
 main()
 
 # --- END OF FILE --- #
