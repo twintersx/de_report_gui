@@ -20,7 +20,7 @@ class RecordGif():
         # small chance GPS coordinates are not captured from ROS. 
         # retries up to 10 times but breaks early if successfull
         n = 0
-        while n < 10:
+        while n < 5:
             try:
                 # need to run ROS python script outside of virtual enviorment with python2 (for ROS1)
                 # the script is executed in the systems root directory '/'
@@ -29,6 +29,7 @@ class RecordGif():
 
                 # the output is captured and the coordinates are divided
                 output = proc.communicate()[0].decode()
+                
                 coordinates = output.split('\n')[0]
 
                 # if 1st row of "coordinates" is not split by unqiue delimiter or a number, an exception is raised and the loop retries
@@ -42,7 +43,8 @@ class RecordGif():
             return
         
         self.latitude, self.longitude = 0, 0
-        print("Not able to capture GPS coordinates from ROS.\nHas a GPS LOCK been established?")
+        warning = f"ROS Master not found.\nCoordinates set to: ({self.latitude}, {self.longitude})"
+        messagebox.showinfo(message=warning)
 
     def recordGIF(self):
         global streamFrm # used to access a variable across threads
@@ -235,7 +237,7 @@ class RootWindow(Frame):
     
     def initMap(self):
         self.map_widget = TkinterMapView(self.mapFrame, width=850, height=850)
-        self.setMapPosition()
+        self.initMapPosition()
 
     def initSaveLog(self):
         self.saveText = Text(self.saveFrame, width=5, height=2)
@@ -265,7 +267,7 @@ class RootWindow(Frame):
     def onReloadClick(self):
         self.saveUserInputs()   # must be first to execute
         self.setDateReport()
-        self.setMapPosition()
+        self.initMapPosition()
         self.initReportButtons()
 
     def setDateReport(self):
@@ -284,7 +286,7 @@ class RootWindow(Frame):
             self.attributes[i]['long'])
         self.map_widget.set_zoom(self.attributes[i]['zoom'])
     
-    def setMapPosition(self):
+    def initMapPosition(self):
         # at least one report
         if len(self.dateRangeReports) >= 1:
             lats, longs = [], []
@@ -401,7 +403,7 @@ class RootWindow(Frame):
                 'marker': marker,
                 'lat': lat,
                 'long': long,
-                'zoom': 16,
+                'zoom': 18,
                 'gif_file': gif_file,
                 'descBox': descBox,
                 'title': title,

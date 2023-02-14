@@ -30,12 +30,15 @@ DONE: make GPS coord when you press log, not after video is done recording
 DONE: make a shortcut on ubuntu desktop
 DONE: reduce frames per second on video recordings and fix fps equations for buffer limit
 DONE: create a dependency file that has all things you can change easily. This includes vehicle name, vin, path directories, etc
+DONE: Fix hang when ros master has not started
 
 
-work on a scroll bar for many disengagments.  
-
+create a button that allows you to return to log window
+work on a scroll bar for many disengagments.  (if window is out of bounds of current screen size)
+for init map zooming, instead of averaging use standard deviation and then use box feature (will autozoom)
 
 Notes:
+type xkill in any terminal and select hanging window to force close
 created venv: https://www.freecodecamp.org/news/how-to-setup-virtual-environments-in-python/
 ran in dir python3 -m venv de_gui_env
 to activate: source de_gui_env/bin/activate -------- should see (de_gui_env) to left of directory in terminal
