@@ -496,7 +496,7 @@ class RootWindow(Frame):
                     row[roadIndex] = road_type
                     
                     description = attrib['descBox'].get("1.0", END) 
-                    description = description.replace('\n', '')
+                    description = description.replace('\n', '').replace('\t', ' ')
                     row[descIndex] = description       
                     break
 
