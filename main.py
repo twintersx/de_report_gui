@@ -522,9 +522,12 @@ class RootWindow(Frame):
         try:    #try will fail if self.gifWindow not defined yet (in initial logging window)
             if messagebox.askokcancel('Disengagment GUI 2.0', "Are you sure you want to quit?\nYour work will be auto-saved.", parent=self.gifWindow):
                 self.saveUserInputs()   
+                event.set()
                 exit()  # exit program
 
-        except:   
+        except:  
+            self.parent.destroy()
+            event.set()
             exit()
 
 def main():
