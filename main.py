@@ -38,7 +38,7 @@ class RecordGif():
             # No exception was raised, continue to recordGIF()
             return
         
-        self.latitude, self.longitude = 0, 0
+        self.latitude, self.longitude = 37.376940955, -121.99051993507  # lab coordinates
         warning = f"ROS Master not found.\nCoordinates set to ({self.latitude}, {self.longitude})"
         messagebox.showwarning(message=warning, title='ROS WARNING')
 
@@ -306,22 +306,27 @@ class RootWindow(Frame):
         self.map_widget.set_zoom(self.attributes[i]['zoom'])
     
     def initMapPosition(self):
-        # at least one report
-        if len(self.dateRangeReports) >= 1:
+        # at least 2 reports
+        if len(self.dateRangeReports) >= 2:
             lats, longs = [], []
             for row in self.dateRangeReports:
                 lats.append(float(row[latIndex]))
                 longs.append(float(row[longIndex]))
-            lat = sum(lats) / len(lats)
-            long = sum(longs) / len(longs)
+            self.map_widget.fit_bounding_box((max(lats), min(longs)), (min(lats), max(longs)))
+
+        # at least 1 report
+        elif len(self.dateRangeReports) == 1: 
+            lat, long = self.dateRangeReports[0][latIndex], self.dateRangeReports[0][longIndex]
+            self.map_widget.set_position(float(lat), float(long))
+            self.map_widget.set_zoom(18)
 
         # no reports, set to lab center
-        elif len(self.dateRangeReports) == 0:
+        else:
             lat, long = 37.376774, -121.989967
+            self.map_widget.set_position(lat, long)
+            self.map_widget.set_zoom(15)
 
-        self.map_widget.set_position(lat, long)
-        self.map_widget.set_zoom(14)
-        self.map_widget.pack(fill='both')
+        self.map_widget.pack(fill='both', expand=True)
 
     def highlightButton(self, i):
         buttons = [*range(0, len(self.attributes))] # create list of numbers from 0 to len attributes

@@ -35,8 +35,7 @@ DONE: create a button that allows you to return to log window
 DONE: work on a scroll bar for many disengagments.  (if window is out of bounds of current screen size)
 DONE: bug when reloading, the disengagment list does not go to top
 DONE: bug with extra line in reports.csv is still causing errors not fixed
-
-for init map zooming, instead of averaging use standard deviation and then use box feature (will autozoom)
+DONE: for initmapzoom, use box points (top left and bottom right)
 
 Notes:
 type xkill in any terminal and select hanging window to force close
