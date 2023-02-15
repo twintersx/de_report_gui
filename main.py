@@ -298,8 +298,9 @@ class RootWindow(Frame):
 
         for row in self.reports[1:]:
             report_date = datetime.strptime(row[dateIndex], '%m/%d/%Y')
-            if self.dates[0].date() <= report_date.date() <= self.dates[1].date(): # simplify to date not datetime.
-                self.dateRangeReports.append(row)
+            if row[vehicleIndex] == VARIABLES['vehicle_name']:
+                if self.dates[0].date() <= report_date.date() <= self.dates[1].date(): # simplify to date not datetime.
+                    self.dateRangeReports.append(row)
 
     def changeMapPosition(self, i):
         self.map_widget.set_zoom(int(self.map_widget.zoom)) #required
@@ -418,7 +419,7 @@ class RootWindow(Frame):
             gif_file = row[recFileIndex]
             recDateObj = datetime.strptime(gif_file.split('.')[0], '%m%d%Y_%H%M%S')
             formatRecDate = datetime.strftime(recDateObj, '%m/%d/%Y %H:%M:%S')
-            title = f"({i+1})\n{str(formatRecDate)}"
+            title = f"({i+1}) {row[vehicleIndex]}\n{str(formatRecDate)}"
               
             descBox = Text(
                 self.userInputFrame, 
