@@ -39,7 +39,7 @@ class RecordGif():
             return
         
         self.latitude, self.longitude = 37.376940955, -121.99051993507  # lab coordinates
-        warning = f"ROS Master not found.\nCoordinates set to ({self.latitude}, {self.longitude})"
+        warning = f"ROS Master or topic /gps_state not found."
         messagebox.showwarning(message=warning, title='ROS WARNING')
 
     def recordGIF(self):
@@ -254,7 +254,7 @@ class RootWindow(Frame):
         self.setDateReport()
     
     def initMap(self):
-        self.map_widget = TkinterMapView(self.mapFrame, width=1500, height=1000)
+        self.map_widget = TkinterMapView(self.mapFrame, width=1350, height=1000)
         self.initMapPosition()
 
     def placeWindowRelRoot(self, window, dx, dy):
@@ -312,20 +312,23 @@ class RootWindow(Frame):
             for row in self.dateRangeReports:
                 lats.append(float(row[latIndex]))
                 longs.append(float(row[longIndex]))
-            self.map_widget.fit_bounding_box((max(lats), min(longs)), (min(lats), max(longs)))
-
-        # at least 1 report
-        elif len(self.dateRangeReports) == 1: 
-            lat, long = self.dateRangeReports[0][latIndex], self.dateRangeReports[0][longIndex]
-            self.map_widget.set_position(float(lat), float(long))
-            self.map_widget.set_zoom(18)
+            top_left, bottom_right = (max(lats), min(longs)), (min(lats), max(longs))
+            if top_left != bottom_right:
+                self.map_widget.fit_bounding_box((max(lats), min(longs)), (min(lats), max(longs)))
+                self.map_widget.pack(fill='both', expand=True)
+                return
 
         # no reports, set to lab center
-        else:
-            lat, long = 37.376774, -121.989967
-            self.map_widget.set_position(lat, long)
-            self.map_widget.set_zoom(15)
+        lat, long = 37.376774, -121.989967
+        zoom = 15
 
+        # at least 1 report
+        if len(self.dateRangeReports) == 1: 
+            lat, long = self.dateRangeReports[0][latIndex], self.dateRangeReports[0][longIndex]
+            zoom = 18
+
+        self.map_widget.set_position(float(lat), float(long))
+        self.map_widget.set_zoom(zoom)
         self.map_widget.pack(fill='both', expand=True)
 
     def highlightButton(self, i):

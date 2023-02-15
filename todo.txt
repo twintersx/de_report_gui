@@ -37,6 +37,8 @@ DONE: bug when reloading, the disengagment list does not go to top
 DONE: bug with extra line in reports.csv is still causing errors not fixed
 DONE: for initmapzoom, use box points (top left and bottom right)
 
+add specifications for particular vehicle during load
+
 Notes:
 type xkill in any terminal and select hanging window to force close
 created venv: https://www.freecodecamp.org/news/how-to-setup-virtual-environments-in-python/
