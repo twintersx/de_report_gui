@@ -33,10 +33,10 @@ DONE: create a dependency file that has all things you can change easily. This i
 DONE: Fix hang when ros master has not started
 DONE: create a button that allows you to return to log window
 DONE: work on a scroll bar for many disengagments.  (if window is out of bounds of current screen size)
+DONE: bug when reloading, the disengagment list does not go to top
+DONE: bug with extra line in reports.csv is still causing errors not fixed
 
-bug when reloading, the disengagment list does not go to top
 for init map zooming, instead of averaging use standard deviation and then use box feature (will autozoom)
-bug with extra line in reports.csv is still causing errors not fixed
 
 Notes:
 type xkill in any terminal and select hanging window to force close

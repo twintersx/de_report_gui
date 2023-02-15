@@ -1,14 +1,10 @@
 from dependencies import *
 
 class RecordGif():
-    def __init__(self, logButton):
+    def logDEvent(self, logButton):
         # Recording of GIF runs in thread to allow multiple recordings in the same timeframe, 
         # additional button functionality and ability to change text/color of button while recording. 
-        Thread(target=self.logDEvent).start()
         self.logButton = logButton
-
-    def logDEvent(self):
-        # Main function structure of recording thread
         self.recordTime = datetime.now()
         self.captureGPS()
         self.recordGIF()
@@ -81,6 +77,16 @@ class RecordGif():
 
                 io_writer.append_data(resized)
 
+    def clearEmptyRows(self, reports):
+        # removes empty lines if csv is manually edited outside of GUI
+        for row in list(reports):
+            if not row:
+                reports.remove(row)
+
+        with open(VARIABLES['csv_path'], 'w', newline='') as csvfile:
+            csv_writer = writer(csvfile)
+            csv_writer.writerows(reports)
+
     def writeNewCSVRow(self):
         newLog = [None] * len(headers)
         newLog[dateIndex] = self.recordTime.strftime('%m/%d/%Y')
@@ -95,15 +101,9 @@ class RecordGif():
         with open (VARIABLES['csv_path'], newline='') as csvfile:
             reports = list(reader(csvfile, delimiter=','))
 
-        # removes empty lines if csv is manually edited outside of GUI
-        for row in list(reports):
-            if not row:
-                reports.remove(row)
-
         reports.append(newLog)
-        with open(VARIABLES['csv_path'], 'w', newline='') as csvfile:
-            csv_writer = writer(csvfile)
-            csv_writer.writerows(reports)
+
+        self.clearEmptyRows(reports)
 
 class LiveStream():
     def __init__(self):
@@ -161,7 +161,7 @@ class RootWindow(Frame):
 
     def recordButtonFunc(self):
         self.logButton.config(text='RECORDING...', bg='red')
-        RecordGif(self.logButton)
+        Thread(target=RecordGif().logDEvent(self.logButton)).start()
 
     def initReportGUI(self):
         event.set() # stop recording stream thread
@@ -179,23 +179,22 @@ class RootWindow(Frame):
         self.controlFrame.pack(fill='both', side=LEFT, padx=self.pad, pady=self.pad)
 
         self.calFrame = Frame(self.controlFrame, height=20, width=30)
-        self.calFrame.pack(fill='both', side=TOP, padx=self.pad, pady=self.pad)
+        self.calFrame.pack(fill='both', padx=self.pad, pady=self.pad)
 
         self.loadFrame = Frame(self.controlFrame, width=30)
-        self.loadFrame.pack(fill='both', side=TOP, padx=self.pad, pady=self.pad)
+        self.loadFrame.pack(fill='both', padx=self.pad, pady=self.pad)
 
         self.saveFrame = Frame(self.controlFrame, width=30)
-        self.saveFrame.pack(fill='both', side=TOP, padx=self.pad, pady=self.pad)
+        self.saveFrame.pack(fill='both', padx=self.pad, pady=self.pad)
 
         self.userInputFrame = Frame(self.controlFrame, width=30)
-        self.userInputFrame.pack(fill='both', side=TOP, padx=self.pad, pady=self.pad)
 
-        self.reportButtonCanvas = Canvas(self.controlFrame, width=30, height=100)
+        self.reportButtonCanvas = Canvas(self.controlFrame, width=30)
         self.scrollB = Scrollbar(self.controlFrame, command=self.reportButtonCanvas.yview)
         self.reportButtonCanvas.configure(yscrollcommand=self.scrollB.set)
 
         self.scrollB.pack(side=RIGHT, fill=Y)
-        self.reportButtonCanvas.pack(side=TOP, fill='both', padx=self.pad, pady=self.pad, expand=True)
+        self.reportButtonCanvas.pack(fill='both', padx=self.pad, pady=self.pad, expand=True)
         
         self.reportButtonFrame = Frame(self.reportButtonCanvas)
         self.reportButtonFrame.pack(fill='both')
@@ -244,6 +243,7 @@ class RootWindow(Frame):
         self.finalDateButton.pack(fill='both', side=LEFT) 
 
         self.date_buttons = [self.initalDateButton, self.finalDateButton]
+        self.dates = [self.initialDate, self.finalDate]
 
         self.loadButton = Button(self.loadFrame, text="RELOAD / SAVE", command=self.onReloadClick, bg='light blue')
         self.loadButton.pack(fill=X) 
@@ -254,7 +254,7 @@ class RootWindow(Frame):
         self.setDateReport()
     
     def initMap(self):
-        self.map_widget = TkinterMapView(self.mapFrame, width=1250, height=850)
+        self.map_widget = TkinterMapView(self.mapFrame, width=1500, height=1000)
         self.initMapPosition()
 
     def placeWindowRelRoot(self, window, dx, dy):
@@ -267,6 +267,7 @@ class RootWindow(Frame):
     def closeCal(self, index, event):   # if selected date is different than current date
         if self.cal.get_date() != self.initDate:    
             self.newDate = datetime.strptime(self.cal.get_date(), '%m/%d/%y')
+            self.dates[index] = self.newDate
             self.date_buttons[index].config(text=self.newDate.strftime('%m/%d/%Y'))
             self.calWindow.withdraw()
 
@@ -282,16 +283,20 @@ class RootWindow(Frame):
         self.saveUserInputs()   # must be first to execute
         self.setDateReport()
         self.initMapPosition()
+        self.reloadClear()
         self.initReportButtons()
 
     def setDateReport(self):
         self.dateRangeReports = []
         with open(VARIABLES['csv_path'], newline='') as csvfile:
             self.reports = list(reader(csvfile, delimiter=','))
-            for row in self.reports[1:]:
-                report_date = datetime.strptime(row[dateIndex], '%m/%d/%Y')
-                if self.initialDate.date() <= report_date.date() <= self.finalDate.date(): # simplify to date not datetime.
-                    self.dateRangeReports.append(row)
+
+        RecordGif().clearEmptyRows(self.reports)
+
+        for row in self.reports[1:]:
+            report_date = datetime.strptime(row[dateIndex], '%m/%d/%Y')
+            if self.dates[0].date() <= report_date.date() <= self.dates[1].date(): # simplify to date not datetime.
+                self.dateRangeReports.append(row)
 
     def changeMapPosition(self, i):
         self.map_widget.set_zoom(int(self.map_widget.zoom)) #required
@@ -376,6 +381,13 @@ class RootWindow(Frame):
             self.gifFrame.config(image=next(self.frames))
             self.gifFrame.after(self.delay, self.next_frame)
 
+    def reloadClear(self):
+        self.clearWidgets(self.userInputFrame, 'destroy')
+        self.clearWidgets(self.reportButtonFrame, 'destroy')
+        self.userInputFrame.pack_forget()
+        self.gifWindow.withdraw()
+        self.map_widget.delete_all_marker() 
+
     def disengagmentFocus(self, i, marker):
         self.changeMapPosition(i)
         self.initInputWidgets(i)
@@ -383,33 +395,52 @@ class RootWindow(Frame):
         self.displayGif(i)
 
     def initReportButtons(self):
-        self.clearWidgets(self.reportButtonFrame, 'destroy')
-        self.clearWidgets(self.userInputFrame, 'destroy')
-        self.gifWindow.withdraw()
-        self.map_widget.delete_all_marker() 
-
-        helv10 = font.Font(family='Helvetica', size=10, slant='italic')
-        Label(self.reportButtonFrame, text="DISENGAGMENT LIST", font=helv10).pack(side=TOP)
+        helv11 = font.Font(family='Helvetica', size=11, slant='italic')
+        Label(self.reportButtonFrame, 
+            text="DISENGAGMENT LIST", 
+            font=helv11, 
+            width=25).pack()
 
         self.attributes = []
         for i, row in enumerate(self.dateRangeReports):
             lat, long = float(row[latIndex]), float(row[longIndex])
-
             gif_file = row[recFileIndex]
             recDateObj = datetime.strptime(gif_file.split('.')[0], '%m%d%Y_%H%M%S')
             formatRecDate = datetime.strftime(recDateObj, '%m/%d/%Y %H:%M:%S')
             title = f"({i+1})\n{str(formatRecDate)}"
               
-            descBox = Text(self.userInputFrame, width=5, height=5, wrap=None) 
+            descBox = Text(
+                self.userInputFrame, 
+                width=5, 
+                height=5, 
+                wrap=None) 
             descBox.insert('1.0', row[descIndex])
+
             road_type = StringVar(value=row[roadIndex])
-            radio1 = Radiobutton(self.userInputFrame, text='Highway', value='Highway', variable=road_type)
-            radio2 = Radiobutton(self.userInputFrame, text='Street', value='Street', variable=road_type)
+            radio1 = Radiobutton(
+                self.userInputFrame, 
+                text='Highway', 
+                value='Highway', 
+                variable=road_type)
+            radio2 = Radiobutton(
+                self.userInputFrame, 
+                text='Street', 
+                value='Street', 
+                variable=road_type)
 
-            marker = self.map_widget.set_marker(lat, long, marker_color_circle = 'dark green', marker_color_outside = 'green', command=partial(self.disengagmentFocus, i),)
+            marker = self.map_widget.set_marker(
+                lat, 
+                long, 
+                marker_color_circle = 'dark green', 
+                marker_color_outside = 'green', 
+                command=partial(self.disengagmentFocus, i),)
 
-            reportButton = Button(self.reportButtonFrame, text=title, command=partial(self.disengagmentFocus, i, None), width=30)
-            reportButton.pack(fill='both', padx=self.pad) 
+            reportButton = Button(
+                self.reportButtonFrame, 
+                text=title, 
+                width=30,
+                command=partial(self.disengagmentFocus, i, None))
+            reportButton.pack(fill='both') 
             
             attrib_dict = {
                 'i': i,
@@ -418,7 +449,7 @@ class RootWindow(Frame):
                 'lat': lat,
                 'long': long,
                 'zoom': 18,
-                'gif_file': gif_file,
+                'gif_file': row[recFileIndex],
                 'descBox': descBox,
                 'title': title,
                 'road_type': road_type,
@@ -446,6 +477,8 @@ class RootWindow(Frame):
         Label(self.userInputFrame, text="SELECT ROAD TYPE: ").pack(side=LEFT)
         self.attributes[i]['radio1'].pack(side=RIGHT)
         self.attributes[i]['radio2'].pack(side=RIGHT)
+
+        self.userInputFrame.pack(fill='both', side=TOP, padx=self.pad, pady=self.pad)
 
     def saveUserInputs(self):
         with open(VARIABLES['csv_path'], newline='') as csvfile:
@@ -477,12 +510,10 @@ class RootWindow(Frame):
     def onUserClose(self): 
         try:    #try will fail if self.gifWindow not defined yet (in initial logging window)
             if messagebox.askokcancel('Disengagment GUI 2.0', "Are you sure you want to quit?\nYour work will be auto-saved.", parent=self.gifWindow):
-                self.saveUserInputs()
-                event.set() # stop streaming thread on close   
+                self.saveUserInputs()   
                 exit()  # exit program
 
-        except: 
-            event.set() # stop streaming thread on close   
+        except:   
             exit()
 
 def main():
