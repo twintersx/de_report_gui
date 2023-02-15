@@ -1,10 +1,23 @@
 from dependencies import *
 
+def clearEmptyRows(reports):
+    # removes empty lines if csv is manually edited outside of GUI
+    for row in list(reports):
+        if not row:
+            reports.remove(row)
+
+    with open(VARIABLES['csv_path'], 'w', newline='') as csvfile:
+        csv_writer = writer(csvfile)
+        csv_writer.writerows(reports)
+
 class RecordGif():
-    def logDEvent(self, logButton):
+    def __init__(self, logButton):
+        self.logButton = logButton
+        Thread(target=self.logDEvent).start()
+
+    def logDEvent(self):
         # Recording of GIF runs in thread to allow multiple recordings in the same timeframe, 
         # additional button functionality and ability to change text/color of button while recording. 
-        self.logButton = logButton
         self.recordTime = datetime.now()
         self.captureGPS()
         self.recordGIF()
@@ -77,16 +90,6 @@ class RecordGif():
 
                 io_writer.append_data(resized)
 
-    def clearEmptyRows(self, reports):
-        # removes empty lines if csv is manually edited outside of GUI
-        for row in list(reports):
-            if not row:
-                reports.remove(row)
-
-        with open(VARIABLES['csv_path'], 'w', newline='') as csvfile:
-            csv_writer = writer(csvfile)
-            csv_writer.writerows(reports)
-
     def writeNewCSVRow(self):
         newLog = [None] * len(headers)
         newLog[dateIndex] = self.recordTime.strftime('%m/%d/%Y')
@@ -103,7 +106,7 @@ class RecordGif():
 
         reports.append(newLog)
 
-        self.clearEmptyRows(reports)
+        clearEmptyRows(reports)
 
 class LiveStream():
     def __init__(self):
@@ -161,7 +164,7 @@ class RootWindow(Frame):
 
     def recordButtonFunc(self):
         self.logButton.config(text='RECORDING...', bg='red')
-        Thread(target=RecordGif().logDEvent(self.logButton)).start()
+        RecordGif(self.logButton)
 
     def initReportGUI(self):
         event.set() # stop recording stream thread
@@ -291,7 +294,7 @@ class RootWindow(Frame):
         with open(VARIABLES['csv_path'], newline='') as csvfile:
             self.reports = list(reader(csvfile, delimiter=','))
 
-        RecordGif().clearEmptyRows(self.reports)
+        clearEmptyRows(self.reports)
 
         for row in self.reports[1:]:
             report_date = datetime.strptime(row[dateIndex], '%m/%d/%Y')
