@@ -43,8 +43,8 @@ class RecordGif():
             return
         
         self.latitude, self.longitude = 0, 0
-        warning = f"ROS Master not found.\nCoordinates set to: ({self.latitude}, {self.longitude})"
-        messagebox.showinfo(message=warning)
+        warning = f"ROS Master not found.\nCoordinates set to ({self.latitude}, {self.longitude})"
+        messagebox.showwarning(message=warning, title='ROS WARNING')
 
     def recordGIF(self):
         global streamFrm # used to access a variable across threads
@@ -107,6 +107,7 @@ class RecordGif():
 
 class LiveStream():
     def __init__(self):
+        event.clear()
         Thread(target=self.stream_start).start()
 
     def stream_start(self):
@@ -138,10 +139,10 @@ class RootWindow(Frame):
 # ---------- INITIALIZATION --------- #
     def __init__(self, parent):
         Frame.__init__(self, parent)    # initalizes parent class "Frame"
-        self.pack(fill='both', expand=True)
+        self.pack()
         self.parent = parent
         self.parent.title('Disengagment GUI 2.0')
-        self.parent.resizable(False, False)
+        self.parent.resizable(False, True)
         self.parent.protocol("WM_DELETE_WINDOW", self.onUserClose)   # needed to handle root window closing by user
         self.pad = 5                    # spacing between widgets
         self.initLogGUI()
@@ -169,29 +170,38 @@ class RootWindow(Frame):
         self.initCalendar()
         self.initMap()
         self.initReportButtons()
-        self.initSaveLog()
 
     def initFrames(self):   
         self.mapFrame = Frame(self.parent)
-        self.mapFrame.pack(side=RIGHT, fill='both', padx=self.pad, pady=self.pad)
-        
+        self.mapFrame.pack(side=RIGHT, fill='both', padx=self.pad, pady=self.pad, expand=True)
+
         self.controlFrame = Frame(self.parent)
         self.controlFrame.pack(fill='both', side=LEFT, padx=self.pad, pady=self.pad)
 
-        self.calFrame = Frame(self.controlFrame, height=20)
-        self.calFrame.pack(fill=X, side=TOP, padx=self.pad, pady=self.pad)
+        self.calFrame = Frame(self.controlFrame, height=20, width=30)
+        self.calFrame.pack(fill='both', side=TOP, padx=self.pad, pady=self.pad)
 
-        self.loadFrame = Frame(self.controlFrame)
-        self.loadFrame.pack(fill=X, side=TOP, padx=self.pad, pady=self.pad)
+        self.loadFrame = Frame(self.controlFrame, width=30)
+        self.loadFrame.pack(fill='both', side=TOP, padx=self.pad, pady=self.pad)
 
-        self.reportButtonFrame = Frame(self.controlFrame)
-        self.reportButtonFrame.pack(fill=X, padx=self.pad, pady=self.pad)
+        self.saveFrame = Frame(self.controlFrame, width=30)
+        self.saveFrame.pack(fill='both', side=TOP, padx=self.pad, pady=self.pad)
 
-        self.userInputFrame = Frame(self.controlFrame)
-        self.userInputFrame.pack(fill=X, padx=self.pad, pady=self.pad)
+        self.userInputFrame = Frame(self.controlFrame, width=30)
+        self.userInputFrame.pack(fill='both', side=TOP, padx=self.pad, pady=self.pad)
 
-        self.saveFrame = Frame(self.controlFrame)
-        self.saveFrame.pack(fill=X, side=BOTTOM, padx=self.pad, pady=self.pad)
+        self.reportButtonCanvas = Canvas(self.controlFrame, width=30, height=100)
+        self.scrollB = Scrollbar(self.controlFrame, command=self.reportButtonCanvas.yview)
+        self.reportButtonCanvas.configure(yscrollcommand=self.scrollB.set)
+
+        self.scrollB.pack(side=RIGHT, fill=Y)
+        self.reportButtonCanvas.pack(side=TOP, fill='both', padx=self.pad, pady=self.pad, expand=True)
+        
+        self.reportButtonFrame = Frame(self.reportButtonCanvas)
+        self.reportButtonFrame.pack(fill='both')
+        self.reportButtonCanvas.create_window((1,1), window=self.reportButtonFrame, anchor="nw", tags="self.reportButtonFrame")
+
+        self.reportButtonFrame.bind("<Configure>", self.onFrameConfigure)
 
         # --- Top Level Window Initialization --- #
         self.calWindow = Toplevel()
@@ -206,10 +216,13 @@ class RootWindow(Frame):
         self.gifWindow.attributes('-topmost', True)
         self.gifWindow.resizable(False, False)
 
+    def onFrameConfigure(self, event):
+        self.reportButtonCanvas.configure(scrollregion=self.reportButtonCanvas.bbox("all"))
+
     def initCalendar(self):
         today = date.today()
         self.initialDate, self.finalDate = datetime.today(), datetime.today()
-        self.cal = Calendar(self.calWindow, selectmode='day', year=today.year, month=today.month, day=today.day, background='orange', foreground='white', borderwidth=2)
+        self.cal = Calendar(self.calWindow, selectmode='day', year=today.year, month=today.month, day=today.day, background='grey', foreground='white', borderwidth=2)
         self.cal.pack()
 
         Label(self.calFrame, text='DATE RANGE: ').pack(fill='both', side=LEFT)
@@ -217,6 +230,7 @@ class RootWindow(Frame):
         self.initalDateButton = Button(
             self.calFrame, 
             text=f"{today.strftime('%m/%d/%Y')}", 
+            bg='#FFFFC1',
             command=partial(self.initDateButton, "Set Inital Date", 0)) # need index to specify button
         self.initalDateButton.pack(fill='both', side=LEFT) 
 
@@ -225,23 +239,23 @@ class RootWindow(Frame):
         self.finalDateButton = Button(
             self.calFrame, 
             text=f"{today.strftime('%m/%d/%Y')}", 
+            bg='#FFFFC1',
             command=partial(self.initDateButton, "Set Final Date", 1))
         self.finalDateButton.pack(fill='both', side=LEFT) 
 
         self.date_buttons = [self.initalDateButton, self.finalDateButton]
 
-        self.loadButton = Button(self.loadFrame, text="RELOAD / SAVE", command=self.onReloadClick)
-        self.loadButton.pack(fill=X, side=BOTTOM) 
+        self.loadButton = Button(self.loadFrame, text="RELOAD / SAVE", command=self.onReloadClick, bg='light blue')
+        self.loadButton.pack(fill=X) 
+        self.saveText = Text(self.loadFrame, width=5, height=2)
+        self.saveText.pack(fill=X)
+        Button(self.saveFrame, text='\u2B05 RETURN TO LOGGING WINDOW', command=self.backToLogPage, bg='light blue').pack(pady=(0, 10), fill=X)
 
         self.setDateReport()
     
     def initMap(self):
-        self.map_widget = TkinterMapView(self.mapFrame, width=850, height=850)
+        self.map_widget = TkinterMapView(self.mapFrame, width=1250, height=850)
         self.initMapPosition()
-
-    def initSaveLog(self):
-        self.saveText = Text(self.saveFrame, width=5, height=2)
-        self.saveText.pack(fill=X)
 
     def placeWindowRelRoot(self, window, dx, dy):
         # Places a TopLevel Widget in reference to root window
@@ -369,13 +383,13 @@ class RootWindow(Frame):
         self.displayGif(i)
 
     def initReportButtons(self):
-        self.clearWidgets(self.reportButtonFrame, 'destroy') 
+        self.clearWidgets(self.reportButtonFrame, 'destroy')
         self.clearWidgets(self.userInputFrame, 'destroy')
         self.gifWindow.withdraw()
-        self.map_widget.delete_all_marker()  
+        self.map_widget.delete_all_marker() 
 
         helv10 = font.Font(family='Helvetica', size=10, slant='italic')
-        Label(self.reportButtonFrame, text="DISENGAGMENT LIST", font=helv10).pack(pady=(20, 0))
+        Label(self.reportButtonFrame, text="DISENGAGMENT LIST", font=helv10).pack(side=TOP)
 
         self.attributes = []
         for i, row in enumerate(self.dateRangeReports):
@@ -384,9 +398,9 @@ class RootWindow(Frame):
             gif_file = row[recFileIndex]
             recDateObj = datetime.strptime(gif_file.split('.')[0], '%m%d%Y_%H%M%S')
             formatRecDate = datetime.strftime(recDateObj, '%m/%d/%Y %H:%M:%S')
-            title = f"{str(formatRecDate)} \n({lat}, {long})"
+            title = f"({i+1})\n{str(formatRecDate)}"
               
-            descBox = Text(self.userInputFrame, width=5, height=5) 
+            descBox = Text(self.userInputFrame, width=5, height=5, wrap=None) 
             descBox.insert('1.0', row[descIndex])
             road_type = StringVar(value=row[roadIndex])
             radio1 = Radiobutton(self.userInputFrame, text='Highway', value='Highway', variable=road_type)
@@ -394,9 +408,9 @@ class RootWindow(Frame):
 
             marker = self.map_widget.set_marker(lat, long, marker_color_circle = 'dark green', marker_color_outside = 'green', command=partial(self.disengagmentFocus, i),)
 
-            reportButton = Button(self.reportButtonFrame, text=title, command=partial(self.disengagmentFocus, i, None))
-            reportButton.pack(fill='both', padx=self.pad, pady=self.pad) 
-
+            reportButton = Button(self.reportButtonFrame, text=title, command=partial(self.disengagmentFocus, i, None), width=30)
+            reportButton.pack(fill='both', padx=self.pad) 
+            
             attrib_dict = {
                 'i': i,
                 'button': reportButton,
@@ -454,6 +468,12 @@ class RootWindow(Frame):
             
         self.saveText.insert('1.0', f"SAVED: {datetime.now().strftime('%H:%M:%S') }\n") #1.0 line 1 char 0
 
+    def backToLogPage(self):
+        self.saveUserInputs()
+        self.clearWidgets(self.parent, 'destroy')
+        LiveStream()
+        self.initLogGUI()
+
     def onUserClose(self): 
         try:    #try will fail if self.gifWindow not defined yet (in initial logging window)
             if messagebox.askokcancel('Disengagment GUI 2.0', "Are you sure you want to quit?\nYour work will be auto-saved.", parent=self.gifWindow):
@@ -470,7 +490,7 @@ def main():
     root = Tk()
     RootWindow(root)
     root.mainloop()
-    
+
 main()
 
 # --- END OF FILE --- #

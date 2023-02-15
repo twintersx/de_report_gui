@@ -8,7 +8,7 @@ from functools import partial
 from csv import reader, writer 
 from threading import Lock, Thread, Event
 from itertools import count, cycle
-from tkinter import Tk, Frame, Button, Toplevel, Text, Label, Radiobutton, StringVar, font, messagebox, END, TOP, BOTTOM, LEFT, RIGHT, X, Y
+from tkinter import Tk, Frame, Button, Toplevel, Text, Label, Canvas, Scrollbar, Radiobutton, StringVar, font, messagebox, END, TOP, BOTTOM, LEFT, RIGHT, X, Y
 from tkintermapview import TkinterMapView
 from tkcalendar import Calendar 
 from cv2 import VideoCapture, cvtColor, resize, COLOR_BGR2RGB, INTER_AREA, destroyAllWindows
