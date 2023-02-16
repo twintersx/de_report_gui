@@ -47,3 +47,21 @@ to activate: source de_gui_env/bin/activate -------- should see (de_gui_env) to 
 
 rostopic echo /gps_state
 Look for Longitude: and Latitude: 
+
+Exception in Tkinter callback
+Traceback (most recent call last):
+  File "/usr/lib/python3.6/tkinter/__init__.py", line 1705, in __call__
+    return self.func(*args)
+  File "/home/leaf/Desktop/de_report_gui/main.py", line 413, in disengagmentFocus
+    self.displayGif(i)
+  File "/home/leaf/Desktop/de_report_gui/main.py", line 388, in displayGif
+    frames.append(ImageTk.PhotoImage(img.copy()))
+  File "/home/leaf/Desktop/de_report_gui/venv/lib/python3.6/site-packages/PIL/Image.py", line 1154, in copy
+    self.load()
+  File "/home/leaf/Desktop/de_report_gui/venv/lib/python3.6/site-packages/PIL/ImageFile.py", line 274, in load
+    raise_oserror(err_code)
+  File "/home/leaf/Desktop/de_report_gui/venv/lib/python3.6/site-packages/PIL/ImageFile.py", line 67, in raise_oserror
+    raise OSError(message + " when reading image file")
+OSError: broken data stream when reading image file
+
+^^^ error saved multiple bad recordings that cannot be opnned by gui but can be opened in vs code so video wqas saved... Like it got cropped, maybe by buffer?
