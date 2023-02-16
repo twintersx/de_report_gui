@@ -36,8 +36,8 @@ DONE: work on a scroll bar for many disengagments.  (if window is out of bounds 
 DONE: bug when reloading, the disengagment list does not go to top
 DONE: bug with extra line in reports.csv is still causing errors not fixed
 DONE: for initmapzoom, use box points (top left and bottom right)
-
-add specifications for particular vehicle during load
+DONE: add specifications for particular vehicle during load
+DONE: move map slighly up when focus to see marker better
 
 Notes:
 type xkill in any terminal and select hanging window to force close

@@ -145,7 +145,7 @@ class RootWindow(Frame):
         self.pack()
         self.parent = parent
         self.parent.title('Disengagment GUI 2.0')
-        self.parent.resizable(False, True)
+        self.parent.resizable(False, False)
         self.parent.protocol("WM_DELETE_WINDOW", self.onUserClose)   # needed to handle root window closing by user
         self.pad = 5                    # spacing between widgets
         self.initLogGUI()
@@ -160,7 +160,7 @@ class RootWindow(Frame):
 
         helv20 = font.Font(family='Helvetica', size=20, weight='bold')
         endDriveButton = Button(self.logFrame, text="END DRIVE", command=self.initReportGUI, bg='red', font=helv20)
-        endDriveButton.pack(fill='both', padx=self.pad, pady=self.pad, side=BOTTOM)
+        endDriveButton.pack(fill='both', padx=self.pad, pady=self.pad, side=BOTTOM, expand=True)
 
     def recordButtonFunc(self):
         self.logButton.config(text='RECORDING...', bg='red')
@@ -305,7 +305,7 @@ class RootWindow(Frame):
     def changeMapPosition(self, i):
         self.map_widget.set_zoom(int(self.map_widget.zoom)) #required
         self.map_widget.set_position(
-            self.attributes[i]['lat'], 
+            self.attributes[i]['lat']+0.0005, 
             self.attributes[i]['long'])
         self.map_widget.set_zoom(self.attributes[i]['zoom'])
     
@@ -361,7 +361,8 @@ class RootWindow(Frame):
 
     def displayGif(self, i):
         self.clearWidgets(self.gifWindow, 'destroy')
-        self.placeWindowRelRoot(self.gifWindow, 550, 0)
+        self.placeWindowRelRoot(self.gifWindow, 650, -100
+                                )
         self.gifWindow.title(self.attributes[i]['title'])
 
         self.gifFrame = Label(self.gifWindow)
