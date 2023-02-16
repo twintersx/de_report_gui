@@ -134,7 +134,7 @@ class LiveStream():
             if event.is_set():
                 break
 
-        cap.release()               # Close the window / Release webcam
+        cap.release()           # Close the window / Release webcam
         destroyAllWindows()     # De-allocate any associated memory usage
         return
 
@@ -163,6 +163,7 @@ class RootWindow(Frame):
         endDriveButton.pack(fill='both', padx=self.pad, pady=self.pad, side=BOTTOM, expand=True)
 
     def recordButtonFunc(self):
+        # Need to change color before starting thread
         self.logButton.config(text='RECORDING...', bg='red')
         RecordGif(self.logButton)
 
@@ -219,6 +220,7 @@ class RootWindow(Frame):
         self.gifWindow.resizable(False, False)
 
     def onFrameConfigure(self, event):
+        # needed to self size scroll window for report buttons
         self.reportButtonCanvas.configure(scrollregion=self.reportButtonCanvas.bbox("all"))
 
     def initCalendar(self):
@@ -245,6 +247,7 @@ class RootWindow(Frame):
             command=partial(self.initDateButton, "Set Final Date", 1))
         self.finalDateButton.pack(fill='both', side=LEFT) 
 
+        # cannot pack button into its own "command" function so need to save for later (in order of initial and final dates)
         self.date_buttons = [self.initalDateButton, self.finalDateButton]
         self.dates = [self.initialDate, self.finalDate]
 
@@ -279,11 +282,12 @@ class RootWindow(Frame):
         self.placeWindowRelRoot(self.calWindow, 0, 110)
         self.calWindow.title(title)
         self.calWindow.deiconify()
-        self.calWindow.bind('<Button-1>', partial(self.closeCal, index))
+        # if mouse button is clicked, check if the date is the same as before. If not, save new date and close cal.
+        self.calWindow.bind('<Button-1>', partial(self.closeCal, index))  
     
 # ---------- USER CONTROL FUNCTIONALITY ---------- #
     def onReloadClick(self):
-        self.saveUserInputs()   # must be first to execute
+        self.saveUserInputs()   # must be first to execute (data will be deleted if not saved)
         self.setDateReport()
         self.initMapPosition()
         self.reloadClear()
@@ -298,14 +302,14 @@ class RootWindow(Frame):
 
         for row in self.reports[1:]:
             report_date = datetime.strptime(row[dateIndex], '%m/%d/%Y')
-            if row[vehicleIndex] == VARIABLES['vehicle_name']:
-                if self.dates[0].date() <= report_date.date() <= self.dates[1].date(): # simplify to date not datetime.
+            if row[vehicleIndex] == VARIABLES['vehicle_name']:              # only shows current vehicle disengagments/reports
+                if self.dates[0].date() <= report_date.date() <= self.dates[1].date(): # need to compare dates not datetime to get selected report data
                     self.dateRangeReports.append(row)
 
     def changeMapPosition(self, i):
         self.map_widget.set_zoom(int(self.map_widget.zoom)) #required
         self.map_widget.set_position(
-            self.attributes[i]['lat']+0.0005, 
+            self.attributes[i]['lat']+0.0005, # moves map slighly higher to allow gif and marker to show together.
             self.attributes[i]['long'])
         self.map_widget.set_zoom(self.attributes[i]['zoom'])
     
@@ -316,7 +320,8 @@ class RootWindow(Frame):
             for row in self.dateRangeReports:
                 lats.append(float(row[latIndex]))
                 longs.append(float(row[longIndex]))
-            top_left, bottom_right = (max(lats), min(longs)), (min(lats), max(longs))
+            top_left, bottom_right = (max(lats), min(longs)), (min(lats), max(longs))   
+            # if your results only show the same location (will default to lab if can't grab from GPS), it will open the map incorrectly
             if top_left != bottom_right:
                 self.map_widget.fit_bounding_box((max(lats), min(longs)), (min(lats), max(longs)))
                 self.map_widget.pack(fill='both', expand=True)
@@ -361,8 +366,7 @@ class RootWindow(Frame):
 
     def displayGif(self, i):
         self.clearWidgets(self.gifWindow, 'destroy')
-        self.placeWindowRelRoot(self.gifWindow, 650, -100
-                                )
+        self.placeWindowRelRoot(self.gifWindow, 650, -100)  # -100 to push above root window max
         self.gifWindow.title(self.attributes[i]['title'])
 
         self.gifFrame = Label(self.gifWindow)
@@ -390,6 +394,7 @@ class RootWindow(Frame):
         self.next_frame()
     
     def next_frame(self):
+        # after display gif finishes, this function repeats
         if self.frames:
             self.gifFrame.config(image=next(self.frames))
             self.gifFrame.after(self.delay, self.next_frame)
@@ -426,10 +431,11 @@ class RootWindow(Frame):
                 self.userInputFrame, 
                 width=5, 
                 height=5, 
-                wrap=None) 
+                wrap='word') 
             descBox.insert('1.0', row[descIndex])
 
-            road_type = StringVar(value=row[roadIndex])
+            # road_type StringVar is reference by both radio buttons so they can operate together
+            road_type = StringVar(value=row[roadIndex]) 
             radio1 = Radiobutton(
                 self.userInputFrame, 
                 text='Highway', 
@@ -501,18 +507,19 @@ class RootWindow(Frame):
             for attrib in self.attributes:                       
                 if attrib['gif_file'] == row[recFileIndex]:
                     road_type = attrib['road_type'].get()
-                    row[roadIndex] = road_type
+                    row[roadIndex] = road_type      # adds to self.reports so if not saved to csf, it will save selection
                     
                     description = attrib['descBox'].get("1.0", END) 
-                    description = description.replace('\n', '').replace('\t', ' ')
-                    row[descIndex] = description       
+                    description = description.replace('\n', ' ').replace('\t', ' ')
+                    row[descIndex] = description    # adds to self.reports so if not saved to csf, it will save text      
                     break
 
         with open(VARIABLES['csv_path'], 'w', newline='') as csvfile:
             csv_writer = writer(csvfile)
             csv_writer.writerows(self.reports)
             
-        self.saveText.insert('1.0', f"SAVED: {datetime.now().strftime('%H:%M:%S') }\n") #1.0 line 1 char 0
+        # saved log text
+        self.saveText.insert('1.0', f"SAVED: {datetime.now().strftime('%H:%M:%S') }\n")     # 1.0 line 1 char 0
 
     def backToLogPage(self):
         self.saveUserInputs()
@@ -527,7 +534,7 @@ class RootWindow(Frame):
                 event.set()
                 exit()  # exit program
 
-        except:  
+        except: # except executes only from initial log window
             self.parent.destroy()
             event.set()
             exit()
