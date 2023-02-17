@@ -13,7 +13,7 @@ from tkintermapview import TkinterMapView
 from tkcalendar import Calendar 
 from cv2 import VideoCapture, cvtColor, resize, COLOR_BGR2RGB, INTER_AREA, destroyAllWindows
 from imageio import get_writer
-from PIL import ImageTk, Image           
+from PIL import ImageTk, Image , ImageFile          
 from datetime import datetime, date, timedelta      
 from time import sleep
 

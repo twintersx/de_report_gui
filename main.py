@@ -1,4 +1,5 @@
 from dependencies import *
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 def clearEmptyRows(reports):
     # removes empty lines if csv is manually edited outside of GUI
@@ -58,7 +59,7 @@ class RecordGif():
     def recordGIF(self):
         global streamFrm # used to access a variable across threads
         self.gif_file_name = self.recordTime.strftime("%m%d%Y_%H%M%S") + '.gif'
-        tMinus15 = self.recordTime - timedelta(seconds=10)
+        tMinus15 = self.recordTime - timedelta(seconds=15)
         
         sleep(10)   # wait until LiveStream captures more stream frames
 
@@ -81,12 +82,12 @@ class RecordGif():
         with get_writer(recording_path) as io_writer:
             for f in self.gifFrames:
                 rgb_frame = cvtColor(f, COLOR_BGR2RGB)  # imageio needs RGB format
-                
+
                 # resize image to view easier in reporting window
                 scale_percent = 150
                 width = int(rgb_frame.shape[1] * scale_percent / 100)
                 height = int(rgb_frame.shape[0] * scale_percent / 100)
-                resized = resize(rgb_frame, (width, height), interpolation = INTER_AREA)
+                resized = resize(rgb_frame, (width, height), interpolation=INTER_AREA)
 
                 io_writer.append_data(resized)
 
@@ -122,7 +123,7 @@ class LiveStream():
             with lock:  
                 streamFrm.append((datetime.now(), frame))
 
-            fps, buffer_limit_seconds = 2, 300
+            fps, buffer_limit_seconds = 2, 300  # 5 minutes
             sleep(1 / fps) 
 
             if len(streamFrm) > fps * buffer_limit_seconds: 

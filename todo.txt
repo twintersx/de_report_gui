@@ -39,6 +39,9 @@ DONE: for initmapzoom, use box points (top left and bottom right)
 DONE: add specifications for particular vehicle during load
 DONE: move map slighly up when focus to see marker better
 
+Test if new line of code has changed any issues opening gif files
+handle caMERA failing to record without hanging code
+
 Notes:
 type xkill in any terminal and select hanging window to force close
 created venv: https://www.freecodecamp.org/news/how-to-setup-virtual-environments-in-python/
