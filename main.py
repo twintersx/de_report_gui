@@ -30,7 +30,7 @@ class RecordGif():
         # small chance GPS coordinates are not captured from ROS. 
         # retries up to 10 times but breaks early if successfull
         n = 0
-        while n < 5:
+        while n < 10:
             try:
                 # need to run ROS python script outside of virtual enviorment with python2 (for ROS1)
                 # the script is executed in the systems root directory '/'
@@ -53,8 +53,8 @@ class RecordGif():
             return
         
         self.latitude, self.longitude = 37.376940955, -121.99051993507  # lab coordinates
-        warning = f"ROS Master or topic /gps_state not found."
-        messagebox.showwarning(message=warning, title='ROS WARNING')
+        warning = f"GPS was not recorded."
+        messagebox.showwarning(message=warning, title='DE GUI MESSAGE')
 
     def recordGIF(self):
         global streamFrm # used to access a variable across threads
@@ -367,8 +367,8 @@ class RootWindow(Frame):
 
     def displayGif(self, i):
         self.clearWidgets(self.gifWindow, 'destroy')
-        self.placeWindowRelRoot(self.gifWindow, 650, -100)  # -100 to push above root window max
-        self.gifWindow.title(self.attributes[i]['title'])
+        self.placeWindowRelRoot(self.gifWindow, 650, -20)  # -20 to push above root window max
+        self.gifWindow.title(self.attributes[i]['title'].replace('\n', ' '))
 
         self.gifFrame = Label(self.gifWindow)
         self.gifFrame.pack()
@@ -436,7 +436,7 @@ class RootWindow(Frame):
             descBox.insert('1.0', row[descIndex])
 
             # road_type StringVar is reference by both radio buttons so they can operate together
-            road_type = StringVar(value=row[roadIndex]) 
+            road_type = StringVar(value='Street') 
             radio1 = Radiobutton(
                 self.userInputFrame, 
                 text='Highway', 
@@ -511,7 +511,7 @@ class RootWindow(Frame):
                     row[roadIndex] = road_type      # adds to self.reports so if not saved to csf, it will save selection
                     
                     description = attrib['descBox'].get("1.0", END) 
-                    description = description.replace('\n', ' ').replace('\t', ' ')
+                    description = description.replace('\n', '').replace('\t', ' ')
                     row[descIndex] = description    # adds to self.reports so if not saved to csf, it will save text      
                     break
 
